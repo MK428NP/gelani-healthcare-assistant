@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Pill,
   Search,
@@ -16,16 +16,26 @@ import {
   Loader2,
   User,
   ChevronRight,
+  ChevronDown,
   Trash2,
+  Heart,
+  Brain,
+  Droplets,
+  Wind,
+  Bone,
+  Eye,
+  Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -33,6 +43,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
@@ -43,6 +58,7 @@ interface Patient {
   dateOfBirth: string;
   gender: string;
   allergies?: string;
+  chronicConditions?: string;
 }
 
 interface PatientMedication {
@@ -67,6 +83,314 @@ interface DrugInteraction {
   management: string;
   references: string[];
 }
+
+// Comprehensive Medication Database by Category/Indication
+const medicationDatabase = {
+  cardiovascular: {
+    name: "Cardiovascular",
+    icon: Heart,
+    color: "text-red-500",
+    bgColor: "bg-red-50",
+    conditions: {
+      "Hypertension": [
+        { name: "Amlodipine", generic: "Amlodipine Besylate", dosage: "5-10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Lisinopril", generic: "Lisinopril", dosage: "10-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Enalapril", generic: "Enalapril Maleate", dosage: "5-40mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Losartan", generic: "Losartan Potassium", dosage: "50-100mg", frequency: "Once daily", route: "Oral" },
+        { name: "Valsartan", generic: "Valsartan", dosage: "80-320mg", frequency: "Once daily", route: "Oral" },
+        { name: "Metoprolol", generic: "Metoprolol Tartrate", dosage: "50-200mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Atenolol", generic: "Atenolol", dosage: "50-100mg", frequency: "Once daily", route: "Oral" },
+        { name: "Hydrochlorothiazide", generic: "HCTZ", dosage: "12.5-50mg", frequency: "Once daily", route: "Oral" },
+        { name: "Nifedipine", generic: "Nifedipine ER", dosage: "30-90mg", frequency: "Once daily", route: "Oral" },
+        { name: "Carvedilol", generic: "Carvedilol", dosage: "6.25-25mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Furosemide", generic: "Furosemide", dosage: "20-80mg", frequency: "Once/Twice daily", route: "Oral/IV" },
+      ],
+      "Heart Failure": [
+        { name: "Carvedilol", generic: "Carvedilol", dosage: "3.125-25mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Bisoprolol", generic: "Bisoprolol", dosage: "1.25-10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Spironolactone", generic: "Spironolactone", dosage: "25-50mg", frequency: "Once daily", route: "Oral" },
+        { name: "Digoxin", generic: "Digoxin", dosage: "0.125-0.25mg", frequency: "Once daily", route: "Oral" },
+        { name: "Sacubitril/Valsartan", generic: "Entresto", dosage: "24/26-97/103mg", frequency: "Twice daily", route: "Oral" },
+      ],
+      "Angina": [
+        { name: "Nitroglycerin SL", generic: "Nitroglycerin", dosage: "0.3-0.6mg", frequency: "PRN", route: "Sublingual" },
+        { name: "Isosorbide Mononitrate", generic: "ISMN", dosage: "20-60mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Amlodipine", generic: "Amlodipine Besylate", dosage: "5-10mg", frequency: "Once daily", route: "Oral" },
+      ],
+      "Anticoagulation": [
+        { name: "Warfarin", generic: "Warfarin Sodium", dosage: "2-10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Aspirin", generic: "Acetylsalicylic Acid", dosage: "81-325mg", frequency: "Once daily", route: "Oral" },
+        { name: "Clopidogrel", generic: "Clopidogrel Bisulfate", dosage: "75mg", frequency: "Once daily", route: "Oral" },
+        { name: "Enoxaparin", generic: "Enoxaparin Sodium", dosage: "40-1.5mg/kg", frequency: "Once/Twice daily", route: "Subcutaneous" },
+        { name: "Heparin", generic: "Unfractionated Heparin", dosage: "Per protocol", frequency: "Continuous", route: "IV" },
+        { name: "Rivaroxaban", generic: "Rivaroxaban", dosage: "10-20mg", frequency: "Once daily", route: "Oral" },
+        { name: "Apixaban", generic: "Apixaban", dosage: "2.5-5mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Dabigatran", generic: "Dabigatran Etexilate", dosage: "75-150mg", frequency: "Twice daily", route: "Oral" },
+      ],
+      "Dyslipidemia": [
+        { name: "Atorvastatin", generic: "Atorvastatin Calcium", dosage: "10-80mg", frequency: "Once daily", route: "Oral" },
+        { name: "Simvastatin", generic: "Simvastatin", dosage: "10-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Rosuvastatin", generic: "Rosuvastatin Calcium", dosage: "5-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Ezetimibe", generic: "Ezetimibe", dosage: "10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Gemfibrozil", generic: "Gemfibrozil", dosage: "600mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Fenofibrate", generic: "Fenofibrate", dosage: "48-145mg", frequency: "Once daily", route: "Oral" },
+      ],
+    },
+  },
+  endocrine: {
+    name: "Endocrine/Diabetes",
+    icon: Droplets,
+    color: "text-amber-500",
+    bgColor: "bg-amber-50",
+    conditions: {
+      "Diabetes Mellitus Type 2": [
+        { name: "Metformin", generic: "Metformin Hydrochloride", dosage: "500-1000mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Glibenclamide", generic: "Glyburide", dosage: "2.5-10mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Glimepiride", generic: "Glimepiride", dosage: "1-4mg", frequency: "Once daily", route: "Oral" },
+        { name: "Gliclazide", generic: "Gliclazide", dosage: "40-320mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Sitagliptin", generic: "Sitagliptin", dosage: "25-100mg", frequency: "Once daily", route: "Oral" },
+        { name: "Linagliptin", generic: "Linagliptin", dosage: "5mg", frequency: "Once daily", route: "Oral" },
+        { name: "Empagliflozin", generic: "Empagliflozin", dosage: "10-25mg", frequency: "Once daily", route: "Oral" },
+        { name: "Dapagliflozin", generic: "Dapagliflozin", dosage: "5-10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Pioglitazone", generic: "Pioglitazone", dosage: "15-45mg", frequency: "Once daily", route: "Oral" },
+      ],
+      "Diabetes Mellitus Type 1": [
+        { name: "Insulin Regular", generic: "Regular Insulin", dosage: "Per sliding scale", frequency: "TID with meals", route: "Subcutaneous" },
+        { name: "Insulin NPH", generic: "NPH Insulin", dosage: "Per protocol", frequency: "Twice daily", route: "Subcutaneous" },
+        { name: "Insulin Glargine", generic: "Lantus", dosage: "10-80 units", frequency: "Once daily", route: "Subcutaneous" },
+        { name: "Insulin Detemir", generic: "Levemir", dosage: "10-80 units", frequency: "Once/Twice daily", route: "Subcutaneous" },
+        { name: "Insulin Lispro", generic: "Humalog", dosage: "Per sliding scale", frequency: "Before meals", route: "Subcutaneous" },
+        { name: "Insulin Aspart", generic: "NovoLog", dosage: "Per sliding scale", frequency: "Before meals", route: "Subcutaneous" },
+      ],
+      "Thyroid Disorders": [
+        { name: "Levothyroxine", generic: "Levothyroxine Sodium", dosage: "25-200mcg", frequency: "Once daily", route: "Oral" },
+        { name: "Carbimazole", generic: "Carbimazole", dosage: "5-40mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Methimazole", generic: "Methimazole", dosage: "5-40mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Propylthiouracil", generic: "PTU", dosage: "50-300mg", frequency: "Three times daily", route: "Oral" },
+      ],
+    },
+  },
+  respiratory: {
+    name: "Respiratory",
+    icon: Wind,
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-50",
+    conditions: {
+      "Asthma": [
+        { name: "Salbutamol Inhaler", generic: "Albuterol", dosage: "100-200mcg", frequency: "PRN", route: "Inhalation" },
+        { name: "Budesonide Inhaler", generic: "Budesonide", dosage: "200-800mcg", frequency: "Twice daily", route: "Inhalation" },
+        { name: "Fluticasone Inhaler", generic: "Fluticasone Propionate", dosage: "88-440mcg", frequency: "Twice daily", route: "Inhalation" },
+        { name: "Salmeterol/Fluticasone", generic: "Seretide/Advair", dosage: "50/100-50/500mcg", frequency: "Twice daily", route: "Inhalation" },
+        { name: "Formoterol/Budesonide", generic: "Symbicort", dosage: "4.5/160-9/320mcg", frequency: "Twice daily", route: "Inhalation" },
+        { name: "Montelukast", generic: "Montelukast Sodium", dosage: "4-10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Theophylline", generic: "Theophylline", dosage: "200-600mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Prednisolone", generic: "Prednisolone", dosage: "5-60mg", frequency: "Once daily", route: "Oral" },
+      ],
+      "COPD": [
+        { name: "Tiotropium", generic: "Tiotropium Bromide", dosage: "18mcg", frequency: "Once daily", route: "Inhalation" },
+        { name: "Ipratropium", generic: "Ipratropium Bromide", dosage: "20-40mcg", frequency: "3-4 times daily", route: "Inhalation" },
+        { name: "Indacaterol", generic: "Indacaterol", dosage: "75-150mcg", frequency: "Once daily", route: "Inhalation" },
+        { name: "Roflumilast", generic: "Roflumilast", dosage: "500mcg", frequency: "Once daily", route: "Oral" },
+      ],
+    },
+  },
+  gastrointestinal: {
+    name: "Gastrointestinal",
+    icon: Activity,
+    color: "text-green-500",
+    bgColor: "bg-green-50",
+    conditions: {
+      "Peptic Ulcer Disease/GERD": [
+        { name: "Omeprazole", generic: "Omeprazole", dosage: "20-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Esomeprazole", generic: "Esomeprazole", dosage: "20-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Pantoprazole", generic: "Pantoprazole", dosage: "20-40mg", frequency: "Once daily", route: "Oral/IV" },
+        { name: "Lansoprazole", generic: "Lansoprazole", dosage: "15-30mg", frequency: "Once daily", route: "Oral" },
+        { name: "Ranitidine", generic: "Ranitidine", dosage: "150-300mg", frequency: "Once/Twice daily", route: "Oral/IV" },
+        { name: "Famotidine", generic: "Famotidine", dosage: "20-40mg", frequency: "Once/Twice daily", route: "Oral/IV" },
+      ],
+      "H. Pylori Infection": [
+        { name: "Amoxicillin", generic: "Amoxicillin", dosage: "1000mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Clarithromycin", generic: "Clarithromycin", dosage: "500mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Metronidazole", generic: "Metronidazole", dosage: "500mg", frequency: "Twice/Three times daily", route: "Oral" },
+        { name: "Tetracycline", generic: "Tetracycline", dosage: "500mg", frequency: "Four times daily", route: "Oral" },
+        { name: "Bismuth Subsalicylate", generic: "Bismuth", dosage: "525mg", frequency: "Four times daily", route: "Oral" },
+      ],
+      "Inflammatory Bowel Disease": [
+        { name: "Mesalamine", generic: "Mesalamine", dosage: "1.6-4.8g", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Sulfasalazine", generic: "Sulfasalazine", dosage: "1-4g", frequency: "Divided doses", route: "Oral" },
+        { name: "Azathioprine", generic: "Azathioprine", dosage: "1.5-2.5mg/kg", frequency: "Once daily", route: "Oral" },
+        { name: "Infliximab", generic: "Infliximab", dosage: "5mg/kg", frequency: "Per schedule", route: "IV" },
+      ],
+    },
+  },
+  infection: {
+    name: "Anti-Infectives",
+    icon: Shield,
+    color: "text-purple-500",
+    bgColor: "bg-purple-50",
+    conditions: {
+      "Bacterial Infections": [
+        { name: "Amoxicillin", generic: "Amoxicillin", dosage: "250-500mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Amoxicillin/Clavulanate", generic: "Augmentin", dosage: "375-625mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Cephalexin", generic: "Cephalexin", dosage: "250-500mg", frequency: "Four times daily", route: "Oral" },
+        { name: "Ceftriaxone", generic: "Ceftriaxone", dosage: "1-2g", frequency: "Once/Twice daily", route: "IV/IM" },
+        { name: "Cefixime", generic: "Cefixime", dosage: "200-400mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Azithromycin", generic: "Azithromycin", dosage: "250-500mg", frequency: "Once daily", route: "Oral" },
+        { name: "Clarithromycin", generic: "Clarithromycin", dosage: "250-500mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Doxycycline", generic: "Doxycycline", dosage: "100mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Ciprofloxacin", generic: "Ciprofloxacin", dosage: "250-750mg", frequency: "Twice daily", route: "Oral/IV" },
+        { name: "Metronidazole", generic: "Metronidazole", dosage: "250-500mg", frequency: "Three times daily", route: "Oral" },
+      ],
+      "Tuberculosis": [
+        { name: "Isoniazid", generic: "Isoniazid", dosage: "300mg", frequency: "Once daily", route: "Oral" },
+        { name: "Rifampicin", generic: "Rifampin", dosage: "600mg", frequency: "Once daily", route: "Oral" },
+        { name: "Pyrazinamide", generic: "Pyrazinamide", dosage: "1.5-2g", frequency: "Once daily", route: "Oral" },
+        { name: "Ethambutol", generic: "Ethambutol", dosage: "15-25mg/kg", frequency: "Once daily", route: "Oral" },
+      ],
+      "HIV/AIDS": [
+        { name: "Tenofovir/Emtricitabine", generic: "Truvada", dosage: "200/300mg", frequency: "Once daily", route: "Oral" },
+        { name: "Dolutegravir", generic: "Dolutegravir", dosage: "50mg", frequency: "Once daily", route: "Oral" },
+        { name: "Efavirenz", generic: "Efavirenz", dosage: "600mg", frequency: "Once daily", route: "Oral" },
+        { name: "Lamivudine", generic: "Lamivudine", dosage: "150-300mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Zidovudine", generic: "AZT", dosage: "300mg", frequency: "Twice daily", route: "Oral" },
+      ],
+      "Malaria": [
+        { name: "Artemether/Lumefantrine", generic: "Coartem", dosage: "Per weight", frequency: "6-dose regimen", route: "Oral" },
+        { name: "Chloroquine", generic: "Chloroquine Phosphate", dosage: "250-500mg", frequency: "Per schedule", route: "Oral" },
+        { name: "Quinine", generic: "Quinine Sulfate", dosage: "600mg", frequency: "Three times daily", route: "Oral" },
+      ],
+    },
+  },
+  neurology: {
+    name: "Neurology/Psychiatry",
+    icon: Brain,
+    color: "text-indigo-500",
+    bgColor: "bg-indigo-50",
+    conditions: {
+      "Epilepsy": [
+        { name: "Phenytoin", generic: "Phenytoin Sodium", dosage: "100-200mg", frequency: "Three times daily", route: "Oral/IV" },
+        { name: "Carbamazepine", generic: "Carbamazepine", dosage: "200-400mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Valproic Acid", generic: "Valproate", dosage: "250-500mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Phenobarbital", generic: "Phenobarbital", dosage: "30-120mg", frequency: "Once/Twice daily", route: "Oral/IV" },
+        { name: "Levetiracetam", generic: "Keppra", dosage: "500-1500mg", frequency: "Twice daily", route: "Oral/IV" },
+        { name: "Lamotrigine", generic: "Lamotrigine", dosage: "25-200mg", frequency: "Once/Twice daily", route: "Oral" },
+      ],
+      "Depression/Anxiety": [
+        { name: "Amitriptyline", generic: "Amitriptyline", dosage: "25-150mg", frequency: "Once daily", route: "Oral" },
+        { name: "Fluoxetine", generic: "Prozac", dosage: "20-60mg", frequency: "Once daily", route: "Oral" },
+        { name: "Sertraline", generic: "Zoloft", dosage: "50-200mg", frequency: "Once daily", route: "Oral" },
+        { name: "Citalopram", generic: "Celexa", dosage: "20-40mg", frequency: "Once daily", route: "Oral" },
+        { name: "Paroxetine", generic: "Paxil", dosage: "20-50mg", frequency: "Once daily", route: "Oral" },
+        { name: "Diazepam", generic: "Valium", dosage: "2-10mg", frequency: "Two to four times", route: "Oral/IV" },
+        { name: "Lorazepam", generic: "Ativan", dosage: "0.5-2mg", frequency: "Two to three times", route: "Oral/IV" },
+      ],
+      "Psychosis": [
+        { name: "Haloperidol", generic: "Haldol", dosage: "2-10mg", frequency: "Two to three times", route: "Oral/IM/IV" },
+        { name: "Chlorpromazine", generic: "Thorazine", dosage: "25-200mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Risperidone", generic: "Risperdal", dosage: "1-6mg", frequency: "Once/Twice daily", route: "Oral" },
+        { name: "Olanzapine", generic: "Zyprexa", dosage: "5-20mg", frequency: "Once daily", route: "Oral" },
+        { name: "Quetiapine", generic: "Seroquel", dosage: "150-750mg", frequency: "Twice daily", route: "Oral" },
+      ],
+      "Parkinson's Disease": [
+        { name: "Levodopa/Carbidopa", generic: "Sinemet", dosage: "100/25-250/25mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Pramipexole", generic: "Mirapex", dosage: "0.125-1.5mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Selegiline", generic: "Selegiline", dosage: "5-10mg", frequency: "Once/Twice daily", route: "Oral" },
+      ],
+      "Migraine": [
+        { name: "Sumatriptan", generic: "Imitrex", dosage: "50-100mg", frequency: "PRN", route: "Oral/SC" },
+        { name: "Propranolol", generic: "Propranolol", dosage: "40-80mg", frequency: "Twice daily", route: "Oral" },
+        { name: "Topiramate", generic: "Topamax", dosage: "25-100mg", frequency: "Twice daily", route: "Oral" },
+      ],
+    },
+  },
+  pain: {
+    name: "Pain Management",
+    icon: Activity,
+    color: "text-orange-500",
+    bgColor: "bg-orange-50",
+    conditions: {
+      "Mild Pain": [
+        { name: "Paracetamol", generic: "Acetaminophen", dosage: "500-1000mg", frequency: "Four times daily", route: "Oral" },
+        { name: "Ibuprofen", generic: "Ibuprofen", dosage: "200-400mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Diclofenac", generic: "Diclofenac Sodium", dosage: "50mg", frequency: "Two to three times", route: "Oral" },
+        { name: "Naproxen", generic: "Naproxen", dosage: "250-500mg", frequency: "Twice daily", route: "Oral" },
+      ],
+      "Moderate Pain": [
+        { name: "Tramadol", generic: "Tramadol", dosage: "50-100mg", frequency: "Four times daily", route: "Oral" },
+        { name: "Codeine", generic: "Codeine Phosphate", dosage: "15-60mg", frequency: "Four times daily", route: "Oral" },
+        { name: "Codeine/Paracetamol", generic: "Co-codamol", dosage: "8/500-30/500mg", frequency: "Four times daily", route: "Oral" },
+      ],
+      "Severe Pain": [
+        { name: "Morphine", generic: "Morphine Sulfate", dosage: "10-30mg", frequency: "Four hourly", route: "Oral/IV/IM" },
+        { name: "Pethidine", generic: "Meperidine", dosage: "50-100mg", frequency: "Four hourly", route: "IM/IV" },
+        { name: "Fentanyl", generic: "Fentanyl", dosage: "25-100mcg/hr", frequency: "72 hourly", route: "Transdermal" },
+      ],
+    },
+  },
+  musculoskeletal: {
+    name: "Musculoskeletal",
+    icon: Bone,
+    color: "text-teal-500",
+    bgColor: "bg-teal-50",
+    conditions: {
+      "Arthritis": [
+        { name: "Methotrexate", generic: "Methotrexate", dosage: "7.5-25mg", frequency: "Once weekly", route: "Oral" },
+        { name: "Sulfasalazine", generic: "Sulfasalazine", dosage: "1-3g", frequency: "Divided doses", route: "Oral" },
+        { name: "Hydroxychloroquine", generic: "Hydroxychloroquine", dosage: "200-400mg", frequency: "Once daily", route: "Oral" },
+        { name: "Leflunomide", generic: "Leflunomide", dosage: "10-20mg", frequency: "Once daily", route: "Oral" },
+        { name: "Celecoxib", generic: "Celebrex", dosage: "100-200mg", frequency: "Once/Twice daily", route: "Oral" },
+      ],
+      "Gout": [
+        { name: "Allopurinol", generic: "Allopurinol", dosage: "100-300mg", frequency: "Once daily", route: "Oral" },
+        { name: "Colchicine", generic: "Colchicine", dosage: "0.5-0.6mg", frequency: "One to two times", route: "Oral" },
+        { name: "Probenecid", generic: "Probenecid", dosage: "250-500mg", frequency: "Twice daily", route: "Oral" },
+      ],
+    },
+  },
+  ophthalmology: {
+    name: "Ophthalmology",
+    icon: Eye,
+    color: "text-sky-500",
+    bgColor: "bg-sky-50",
+    conditions: {
+      "Eye Infections": [
+        { name: "Chloramphenicol Eye Drops", generic: "Chloramphenicol", dosage: "0.5%", frequency: "Every 2 hours", route: "Ophthalmic" },
+        { name: "Ciprofloxacin Eye Drops", generic: "Ciprofloxacin", dosage: "0.3%", frequency: "Four times daily", route: "Ophthalmic" },
+        { name: "Gentamicin Eye Drops", generic: "Gentamicin", dosage: "0.3%", frequency: "Four times daily", route: "Ophthalmic" },
+        { name: "Tetracycline Eye Ointment", generic: "Tetracycline", dosage: "1%", frequency: "Two to four times", route: "Ophthalmic" },
+      ],
+      "Glaucoma": [
+        { name: "Timolol Eye Drops", generic: "Timolol", dosage: "0.25-0.5%", frequency: "Twice daily", route: "Ophthalmic" },
+        { name: "Latanoprost Eye Drops", generic: "Latanoprost", dosage: "0.005%", frequency: "Once daily", route: "Ophthalmic" },
+        { name: "Acetazolamide", generic: "Acetazolamide", dosage: "250-500mg", frequency: "Two to four times", route: "Oral" },
+      ],
+    },
+  },
+  other: {
+    name: "Other Medications",
+    icon: Pill,
+    color: "text-slate-500",
+    bgColor: "bg-slate-50",
+    conditions: {
+      "Anemia": [
+        { name: "Ferrous Sulfate", generic: "Iron", dosage: "200-325mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Folic Acid", generic: "Folate", dosage: "1-5mg", frequency: "Once daily", route: "Oral" },
+        { name: "Vitamin B12", generic: "Cyanocobalamin", dosage: "1000mcg", frequency: "Once daily/monthly", route: "Oral/IM" },
+      ],
+      "Allergies": [
+        { name: "Cetirizine", generic: "Zyrtec", dosage: "10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Loratadine", generic: "Claritin", dosage: "10mg", frequency: "Once daily", route: "Oral" },
+        { name: "Chlorpheniramine", generic: "Chlorpheniramine", dosage: "4mg", frequency: "Three times daily", route: "Oral" },
+        { name: "Diphenhydramine", generic: "Benadryl", dosage: "25-50mg", frequency: "Four times daily", route: "Oral/IV" },
+      ],
+      "Nausea/Vomiting": [
+        { name: "Ondansetron", generic: "Zofran", dosage: "4-8mg", frequency: "Three times daily", route: "Oral/IV" },
+        { name: "Metoclopramide", generic: "Reglan", dosage: "10mg", frequency: "Three times daily", route: "Oral/IV" },
+        { name: "Prochlorperazine", generic: "Compazine", dosage: "5-10mg", frequency: "Three to four times", route: "Oral" },
+      ],
+    },
+  },
+};
 
 // Drug interaction database
 const drugInteractionDB: DrugInteraction[] = [
@@ -142,20 +466,51 @@ const drugInteractionDB: DrugInteraction[] = [
     management: "Take ibuprofen at least 8 hours after aspirin or 30 minutes before.",
     references: ["FDA Drug Safety"],
   },
-];
-
-// Common medications database for quick add
-const commonMedications = [
-  { name: "Metformin", genericName: "Metformin Hydrochloride", commonDosage: "500mg" },
-  { name: "Lisinopril", genericName: "Lisinopril", commonDosage: "10mg" },
-  { name: "Atorvastatin", genericName: "Atorvastatin Calcium", commonDosage: "20mg" },
-  { name: "Aspirin", genericName: "Acetylsalicylic Acid", commonDosage: "81mg" },
-  { name: "Omeprazole", genericName: "Omeprazole", commonDosage: "20mg" },
-  { name: "Warfarin", genericName: "Warfarin Sodium", commonDosage: "5mg" },
-  { name: "Ibuprofen", genericName: "Ibuprofen", commonDosage: "400mg" },
-  { name: "Metoprolol", genericName: "Metoprolol Tartrate", commonDosage: "25mg" },
-  { name: "Amlodipine", genericName: "Amlodipine Besylate", commonDosage: "5mg" },
-  { name: "Levothyroxine", genericName: "Levothyroxine Sodium", commonDosage: "50mcg" },
+  {
+    drug1: "Azithromycin",
+    drug2: "Warfarin",
+    severity: "moderate",
+    description: "Macrolide antibiotics may enhance anticoagulant effect.",
+    clinicalEffects: ["Increased INR", "Bleeding"],
+    management: "Monitor INR closely during antibiotic course.",
+    references: ["Drug Interaction Facts"],
+  },
+  {
+    drug1: "Ciprofloxacin",
+    drug2: "Warfarin",
+    severity: "moderate",
+    description: "Fluoroquinolones may enhance anticoagulant effect.",
+    clinicalEffects: ["Increased INR", "Bleeding risk"],
+    management: "Monitor INR. May need to reduce warfarin dose.",
+    references: ["Lexicomp"],
+  },
+  {
+    drug1: "Fluoxetine",
+    drug2: "Warfarin",
+    severity: "moderate",
+    description: "SSRIs may enhance anticoagulant effect and increase bleeding risk.",
+    clinicalEffects: ["Increased bleeding", "Elevated INR"],
+    management: "Monitor INR and for signs of bleeding.",
+    references: ["Clinical Pharmacology"],
+  },
+  {
+    drug1: "Methotrexate",
+    drug2: "Ibuprofen",
+    severity: "major",
+    description: "NSAIDs may increase methotrexate toxicity.",
+    clinicalEffects: ["Bone marrow suppression", "Hepatotoxicity", "Renal failure"],
+    management: "Avoid combination. If necessary, use with extreme caution and close monitoring.",
+    references: ["FDA Prescribing Information"],
+  },
+  {
+    drug1: "Carbamazepine",
+    drug2: "Warfarin",
+    severity: "moderate",
+    description: "Carbamazepine may decrease warfarin effect.",
+    clinicalEffects: ["Decreased INR", "Reduced anticoagulation"],
+    management: "Monitor INR. May need to increase warfarin dose.",
+    references: ["Drug Interaction Facts"],
+  },
 ];
 
 export function DrugInteractionChecker() {
@@ -166,6 +521,12 @@ export function DrugInteractionChecker() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingMed, setIsAddingMed] = useState(false);
   const [searchMed, setSearchMed] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedConditions, setExpandedConditions] = useState<Set<string>>(new Set());
+  const [customMedName, setCustomMedName] = useState("");
+  const [customDosage, setCustomDosage] = useState("");
+  const [customFrequency, setCustomFrequency] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const { toast } = useToast();
 
   // Fetch all patients
@@ -228,8 +589,22 @@ export function DrugInteractionChecker() {
     setInteractions(foundInteractions);
   };
 
-  const addMedication = async (medName: string, dosage: string) => {
+  const addMedication = async (medName: string, dosage: string, frequency: string = "As prescribed") => {
     if (!selectedPatientId) return;
+
+    // Check for existing medication
+    const existing = patientMedications.find(
+      (m) => m.medicationName.toLowerCase() === medName.toLowerCase()
+    );
+    
+    if (existing) {
+      toast({
+        title: "Already Added",
+        description: `${medName} is already in the medication list`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const response = await fetch("/api/patients/medications", {
@@ -239,7 +614,7 @@ export function DrugInteractionChecker() {
           patientId: selectedPatientId,
           medicationName: medName,
           dosage: dosage,
-          frequency: "As prescribed",
+          frequency: frequency,
           status: "active",
         }),
       });
@@ -251,8 +626,6 @@ export function DrugInteractionChecker() {
           description: `${medName} added to patient's medication list`,
         });
         fetchPatientMedications(selectedPatientId);
-        setIsAddingMed(false);
-        setSearchMed("");
       }
     } catch (error) {
       toast({
@@ -261,6 +634,23 @@ export function DrugInteractionChecker() {
         variant: "destructive",
       });
     }
+  };
+
+  const addCustomMedication = async () => {
+    if (!customMedName.trim()) {
+      toast({
+        title: "Required",
+        description: "Please enter medication name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await addMedication(customMedName, customDosage || "As prescribed", customFrequency || "As needed");
+    setCustomMedName("");
+    setCustomDosage("");
+    setCustomFrequency("");
+    setShowCustomInput(false);
   };
 
   const removeMedication = async (medicationId: string) => {
@@ -291,10 +681,10 @@ export function DrugInteractionChecker() {
     return patients.find((p) => p.id === selectedPatientId);
   };
 
-  const parseAllergies = (allergies?: string): string[] => {
-    if (!allergies) return [];
+  const parseJsonArray = (jsonStr?: string): string[] => {
+    if (!jsonStr) return [];
     try {
-      return JSON.parse(allergies);
+      return JSON.parse(jsonStr);
     } catch {
       return [];
     }
@@ -323,14 +713,60 @@ export function DrugInteractionChecker() {
     }
   };
 
-  const filteredMeds = commonMedications.filter(
-    (med) =>
-      med.name.toLowerCase().includes(searchMed.toLowerCase()) &&
-      !patientMedications.some((pm) => pm.medicationName.toLowerCase() === med.name.toLowerCase())
-  );
+  const toggleCategory = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const toggleCondition = (conditionKey: string) => {
+    const newExpanded = new Set(expandedConditions);
+    if (newExpanded.has(conditionKey)) {
+      newExpanded.delete(conditionKey);
+    } else {
+      newExpanded.add(conditionKey);
+    }
+    setExpandedConditions(newExpanded);
+  };
+
+  const getPatientConditions = (): string[] => {
+    const patient = getSelectedPatient();
+    if (!patient?.chronicConditions) return [];
+    return parseJsonArray(patient.chronicConditions);
+  };
+
+  // Get suggested medications based on patient conditions
+  const getSuggestedMedications = () => {
+    const conditions = getPatientConditions();
+    const suggestions: { name: string; condition: string }[] = [];
+
+    conditions.forEach((condition) => {
+      // Find matching conditions in database
+      Object.entries(medicationDatabase).forEach(([catKey, category]) => {
+        Object.entries(category.conditions).forEach(([condName, meds]) => {
+          if (condName.toLowerCase().includes(condition.toLowerCase()) ||
+              condition.toLowerCase().includes(condName.toLowerCase())) {
+            meds.slice(0, 3).forEach((med) => {
+              if (!suggestions.find((s) => s.name === med.name)) {
+                suggestions.push({ name: med.name, condition: condName });
+              }
+            });
+          }
+        });
+      });
+    });
+
+    return suggestions;
+  };
 
   const selectedPatient = getSelectedPatient();
-  const patientAllergies = selectedPatient ? parseAllergies(selectedPatient.allergies) : [];
+  const patientAllergies = selectedPatient ? parseJsonArray(selectedPatient.allergies) : [];
+  const patientConditions = getPatientConditions();
+  const suggestedMeds = getSuggestedMedications();
 
   return (
     <div className="space-y-6">
@@ -391,16 +827,33 @@ export function DrugInteractionChecker() {
             )}
           </div>
 
-          {patientAllergies.length > 0 && selectedPatient && (
-            <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-sm font-medium text-red-800 mb-2">Known Allergies:</p>
-              <div className="flex flex-wrap gap-2">
-                {patientAllergies.map((allergy, i) => (
-                  <Badge key={i} variant="outline" className="bg-white border-red-300 text-red-700">
-                    {allergy}
-                  </Badge>
-                ))}
-              </div>
+          {/* Patient Conditions & Allergies */}
+          {selectedPatient && (
+            <div className="mt-4 grid sm:grid-cols-2 gap-4">
+              {patientConditions.length > 0 && (
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-800 mb-2">Conditions:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {patientConditions.map((condition, i) => (
+                      <Badge key={i} variant="outline" className="bg-white border-blue-300 text-blue-700">
+                        {condition}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {patientAllergies.length > 0 && (
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm font-medium text-red-800 mb-2">Allergies:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {patientAllergies.map((allergy, i) => (
+                      <Badge key={i} variant="outline" className="bg-white border-red-300 text-red-700">
+                        {allergy}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -427,40 +880,208 @@ export function DrugInteractionChecker() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Add Medication Panel */}
               {isAddingMed && (
-                <div className="mb-4 p-4 bg-slate-50 rounded-lg">
-                  <Label className="text-sm font-medium">Search Medications</Label>
-                  <div className="relative mt-2">
+                <div className="mb-4 space-y-4">
+                  {/* Suggested Medications based on conditions */}
+                  {suggestedMeds.length > 0 && (
+                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <p className="text-sm font-medium text-emerald-800 mb-2">
+                        💡 Suggested based on patient conditions:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedMeds.map((med, i) => (
+                          <Button
+                            key={i}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                            onClick={() => addMedication(med.name, "")}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {med.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search */}
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                      placeholder="Search medications..."
+                      placeholder="Search all medications..."
                       value={searchMed}
                       onChange={(e) => setSearchMed(e.target.value)}
                       className="pl-10"
                     />
                   </div>
-                  {searchMed && filteredMeds.length > 0 && (
-                    <ScrollArea className="h-[200px] mt-2 border rounded-lg">
-                      <div className="p-2 space-y-1">
-                        {filteredMeds.map((med) => (
-                          <button
-                            key={med.name}
-                            onClick={() => addMedication(med.name, med.commonDosage)}
-                            className="w-full flex items-center justify-between p-2 hover:bg-slate-100 rounded text-left"
+
+                  {/* Custom Medication Input */}
+                  <div className="p-3 bg-slate-50 rounded-lg border">
+                    <Label className="text-sm font-medium">Or enter a custom medication:</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      <Input
+                        placeholder="Medication name"
+                        value={customMedName}
+                        onChange={(e) => setCustomMedName(e.target.value)}
+                        className="col-span-3 sm:col-span-1"
+                      />
+                      <Input
+                        placeholder="Dosage"
+                        value={customDosage}
+                        onChange={(e) => setCustomDosage(e.target.value)}
+                        className="col-span-3 sm:col-span-1"
+                      />
+                      <Input
+                        placeholder="Frequency"
+                        value={customFrequency}
+                        onChange={(e) => setCustomFrequency(e.target.value)}
+                        className="col-span-3 sm:col-span-1"
+                      />
+                    </div>
+                    <Button
+                      onClick={addCustomMedication}
+                      size="sm"
+                      className="mt-2 bg-gradient-to-r from-rose-500 to-pink-500"
+                      disabled={!customMedName.trim()}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Custom Medication
+                    </Button>
+                  </div>
+
+                  {/* Medication Categories */}
+                  <ScrollArea className="h-[400px] border rounded-lg">
+                    <div className="p-2 space-y-2">
+                      {Object.entries(medicationDatabase).map(([catKey, category]) => {
+                        const Icon = category.icon;
+                        const isExpanded = expandedCategories.has(catKey);
+                        
+                        // Filter by search
+                        const matchingConditions = Object.entries(category.conditions).filter(
+                          ([condName, meds]) => {
+                            if (!searchMed) return true;
+                            const condMatch = condName.toLowerCase().includes(searchMed.toLowerCase());
+                            const medMatch = meds.some((m) =>
+                              m.name.toLowerCase().includes(searchMed.toLowerCase()) ||
+                              m.generic.toLowerCase().includes(searchMed.toLowerCase())
+                            );
+                            return condMatch || medMatch;
+                          }
+                        );
+
+                        if (matchingConditions.length === 0) return null;
+
+                        return (
+                          <Collapsible
+                            key={catKey}
+                            open={isExpanded}
+                            onOpenChange={() => toggleCategory(catKey)}
                           >
-                            <div>
-                              <p className="font-medium text-sm">{med.name}</p>
-                              <p className="text-xs text-slate-500">{med.commonDosage}</p>
-                            </div>
-                            <Plus className="h-4 w-4 text-slate-400" />
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  )}
+                            <CollapsibleTrigger asChild>
+                              <div className="flex items-center justify-between p-3 bg-white hover:bg-slate-50 rounded-lg cursor-pointer border">
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-2 rounded-lg ${category.bgColor}`}>
+                                    <Icon className={`h-4 w-4 ${category.color}`} />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm">{category.name}</p>
+                                    <p className="text-xs text-slate-500">
+                                      {Object.keys(category.conditions).length} conditions
+                                    </p>
+                                  </div>
+                                </div>
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                                )}
+                              </div>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="pl-4 pr-2 py-2 space-y-2">
+                                {matchingConditions.map(([condName, meds]) => {
+                                  const conditionKey = `${catKey}-${condName}`;
+                                  const isCondExpanded = expandedConditions.has(conditionKey);
+
+                                  return (
+                                    <Collapsible
+                                      key={conditionKey}
+                                      open={isCondExpanded || !!searchMed}
+                                      onOpenChange={() => toggleCondition(conditionKey)}
+                                    >
+                                      <CollapsibleTrigger asChild>
+                                        <div className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100 rounded cursor-pointer">
+                                          <p className="text-sm font-medium text-slate-700">{condName}</p>
+                                          <Badge variant="outline" className="text-xs">
+                                            {meds.length} meds
+                                          </Badge>
+                                        </div>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <div className="grid grid-cols-1 gap-1 py-2">
+                                          {meds
+                                            .filter((med) =>
+                                              !searchMed ||
+                                              med.name.toLowerCase().includes(searchMed.toLowerCase()) ||
+                                              med.generic.toLowerCase().includes(searchMed.toLowerCase())
+                                            )
+                                            .map((med) => {
+                                              const isAdded = patientMedications.some(
+                                                (m) => m.medicationName.toLowerCase() === med.name.toLowerCase()
+                                              );
+
+                                              return (
+                                                <div
+                                                  key={med.name}
+                                                  className={`flex items-center justify-between p-2 rounded ${
+                                                    isAdded
+                                                      ? "bg-emerald-50 border border-emerald-200"
+                                                      : "bg-white hover:bg-slate-50 border"
+                                                  }`}
+                                                >
+                                                  <div className="flex-1">
+                                                    <p className="font-medium text-sm">{med.name}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                      {med.generic} • {med.dosage}
+                                                    </p>
+                                                  </div>
+                                                  {isAdded ? (
+                                                    <Badge variant="outline" className="text-xs bg-emerald-100 border-emerald-300 text-emerald-700">
+                                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                                      Added
+                                                    </Badge>
+                                                  ) : (
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-7 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                                      onClick={() => addMedication(med.name, med.dosage, med.frequency)}
+                                                    >
+                                                      <Plus className="h-3 w-3 mr-1" />
+                                                      Add
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                        </div>
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 </div>
               )}
 
+              {/* Current Medications List */}
               {isLoading ? (
                 <div className="flex items-center justify-center h-[200px]">
                   <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
@@ -627,7 +1248,4 @@ export function DrugInteractionChecker() {
   );
 }
 
-// Label component
-function Label({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <label className={`text-sm font-medium leading-none ${className}`}>{children}</label>;
-}
+export default DrugInteractionChecker;

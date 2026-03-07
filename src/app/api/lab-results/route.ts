@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
     
     if (patientId) where.patientId = patientId;
-    if (consultationId) where.consultationId = consultationId;
+    // Note: consultationId not in schema, filter by patientId only
     if (category) where.category = category;
 
     const labResults = await db.labResult.findMany({

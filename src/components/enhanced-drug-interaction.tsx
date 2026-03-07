@@ -26,7 +26,14 @@ import {
   BellOff,
   Zap,
   Brain,
-  TrendingUp
+  TrendingUp,
+  Heart,
+  Droplets,
+  Wind,
+  Bone,
+  Eye,
+  Syringe,
+  Tablets
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -163,6 +170,109 @@ const DRUG_DATABASE = {
   },
 };
 
+// Common medications organized by category for dropdown selection
+const COMMON_MEDICATIONS = [
+  // Cardiovascular
+  { name: "Amlodipine", category: "Cardiovascular", dose: "5-10mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Lisinopril", category: "Cardiovascular", dose: "10-40mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Metoprolol", category: "Cardiovascular", dose: "50-200mg", frequency: "Twice daily", icon: Heart, color: "text-red-500" },
+  { name: "Atenolol", category: "Cardiovascular", dose: "50-100mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Losartan", category: "Cardiovascular", dose: "50-100mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Carvedilol", category: "Cardiovascular", dose: "6.25-25mg", frequency: "Twice daily", icon: Heart, color: "text-red-500" },
+  { name: "Enalapril", category: "Cardiovascular", dose: "5-40mg", frequency: "Once/Twice daily", icon: Heart, color: "text-red-500" },
+  { name: "Nifedipine", category: "Cardiovascular", dose: "30-90mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Furosemide", category: "Cardiovascular", dose: "20-80mg", frequency: "Once/Twice daily", icon: Heart, color: "text-red-500" },
+  { name: "Spironolactone", category: "Cardiovascular", dose: "25-50mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Digoxin", category: "Cardiovascular", dose: "0.125-0.25mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Atorvastatin", category: "Cardiovascular", dose: "10-80mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Simvastatin", category: "Cardiovascular", dose: "10-40mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Rosuvastatin", category: "Cardiovascular", dose: "5-40mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Aspirin", category: "Cardiovascular", dose: "81-325mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Clopidogrel", category: "Cardiovascular", dose: "75mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Warfarin", category: "Cardiovascular", dose: "2-10mg", frequency: "Once daily", icon: Heart, color: "text-red-500" },
+  { name: "Heparin", category: "Cardiovascular", dose: "Per protocol", frequency: "Continuous", icon: Heart, color: "text-red-500" },
+  { name: "Enoxaparin", category: "Cardiovascular", dose: "40mg", frequency: "Once/Twice daily", icon: Heart, color: "text-red-500" },
+  // Diabetes/Endocrine
+  { name: "Metformin", category: "Diabetes", dose: "500-1000mg", frequency: "Twice daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Glibenclamide", category: "Diabetes", dose: "2.5-10mg", frequency: "Once/Twice daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Glimepiride", category: "Diabetes", dose: "1-4mg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Gliclazide", category: "Diabetes", dose: "40-320mg", frequency: "Once/Twice daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Sitagliptin", category: "Diabetes", dose: "25-100mg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Linagliptin", category: "Diabetes", dose: "5mg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Empagliflozin", category: "Diabetes", dose: "10-25mg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Dapagliflozin", category: "Diabetes", dose: "5-10mg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  { name: "Insulin Regular", category: "Diabetes", dose: "Per sliding scale", frequency: "TID with meals", icon: Syringe, color: "text-amber-500" },
+  { name: "Insulin NPH", category: "Diabetes", dose: "Per protocol", frequency: "Twice daily", icon: Syringe, color: "text-amber-500" },
+  { name: "Insulin Glargine", category: "Diabetes", dose: "10-80 units", frequency: "Once daily", icon: Syringe, color: "text-amber-500" },
+  { name: "Levothyroxine", category: "Endocrine", dose: "25-200mcg", frequency: "Once daily", icon: Droplets, color: "text-amber-500" },
+  // Respiratory
+  { name: "Salbutamol Inhaler", category: "Respiratory", dose: "100-200mcg", frequency: "PRN", icon: Wind, color: "text-cyan-500" },
+  { name: "Budesonide Inhaler", category: "Respiratory", dose: "200-800mcg", frequency: "Twice daily", icon: Wind, color: "text-cyan-500" },
+  { name: "Fluticasone Inhaler", category: "Respiratory", dose: "88-440mcg", frequency: "Twice daily", icon: Wind, color: "text-cyan-500" },
+  { name: "Montelukast", category: "Respiratory", dose: "4-10mg", frequency: "Once daily", icon: Wind, color: "text-cyan-500" },
+  { name: "Theophylline", category: "Respiratory", dose: "200-600mg", frequency: "Twice daily", icon: Wind, color: "text-cyan-500" },
+  { name: "Tiotropium", category: "Respiratory", dose: "18mcg", frequency: "Once daily", icon: Wind, color: "text-cyan-500" },
+  { name: "Ipratropium", category: "Respiratory", dose: "20-40mcg", frequency: "3-4 times daily", icon: Wind, color: "text-cyan-500" },
+  // Gastrointestinal
+  { name: "Omeprazole", category: "Gastrointestinal", dose: "20-40mg", frequency: "Once daily", icon: Activity, color: "text-green-500" },
+  { name: "Esomeprazole", category: "Gastrointestinal", dose: "20-40mg", frequency: "Once daily", icon: Activity, color: "text-green-500" },
+  { name: "Pantoprazole", category: "Gastrointestinal", dose: "20-40mg", frequency: "Once daily", icon: Activity, color: "text-green-500" },
+  { name: "Ranitidine", category: "Gastrointestinal", dose: "150-300mg", frequency: "Once/Twice daily", icon: Activity, color: "text-green-500" },
+  { name: "Famotidine", category: "Gastrointestinal", dose: "20-40mg", frequency: "Once/Twice daily", icon: Activity, color: "text-green-500" },
+  { name: "Metoclopramide", category: "Gastrointestinal", dose: "10mg", frequency: "Three times daily", icon: Activity, color: "text-green-500" },
+  { name: "Ondansetron", category: "Gastrointestinal", dose: "4-8mg", frequency: "Three times daily", icon: Activity, color: "text-green-500" },
+  // Antibiotics/Anti-Infectives
+  { name: "Amoxicillin", category: "Antibiotics", dose: "250-500mg", frequency: "Three times daily", icon: Shield, color: "text-purple-500" },
+  { name: "Amoxicillin/Clavulanate", category: "Antibiotics", dose: "375-625mg", frequency: "Three times daily", icon: Shield, color: "text-purple-500" },
+  { name: "Cephalexin", category: "Antibiotics", dose: "250-500mg", frequency: "Four times daily", icon: Shield, color: "text-purple-500" },
+  { name: "Ceftriaxone", category: "Antibiotics", dose: "1-2g", frequency: "Once/Twice daily", icon: Shield, color: "text-purple-500" },
+  { name: "Azithromycin", category: "Antibiotics", dose: "250-500mg", frequency: "Once daily", icon: Shield, color: "text-purple-500" },
+  { name: "Clarithromycin", category: "Antibiotics", dose: "250-500mg", frequency: "Twice daily", icon: Shield, color: "text-purple-500" },
+  { name: "Doxycycline", category: "Antibiotics", dose: "100mg", frequency: "Twice daily", icon: Shield, color: "text-purple-500" },
+  { name: "Ciprofloxacin", category: "Antibiotics", dose: "250-750mg", frequency: "Twice daily", icon: Shield, color: "text-purple-500" },
+  { name: "Metronidazole", category: "Antibiotics", dose: "250-500mg", frequency: "Three times daily", icon: Shield, color: "text-purple-500" },
+  { name: "Isoniazid", category: "TB Drugs", dose: "300mg", frequency: "Once daily", icon: Shield, color: "text-purple-500" },
+  { name: "Rifampicin", category: "TB Drugs", dose: "600mg", frequency: "Once daily", icon: Shield, color: "text-purple-500" },
+  { name: "Pyrazinamide", category: "TB Drugs", dose: "1.5-2g", frequency: "Once daily", icon: Shield, color: "text-purple-500" },
+  { name: "Ethambutol", category: "TB Drugs", dose: "15-25mg/kg", frequency: "Once daily", icon: Shield, color: "text-purple-500" },
+  { name: "Artemether/Lumefantrine", category: "Antimalarials", dose: "Per weight", frequency: "6-dose regimen", icon: Shield, color: "text-purple-500" },
+  // Pain Management
+  { name: "Paracetamol", category: "Pain", dose: "500-1000mg", frequency: "Four times daily", icon: Tablets, color: "text-orange-500" },
+  { name: "Ibuprofen", category: "Pain", dose: "200-400mg", frequency: "Three times daily", icon: Tablets, color: "text-orange-500" },
+  { name: "Diclofenac", category: "Pain", dose: "50mg", frequency: "Two to three times", icon: Tablets, color: "text-orange-500" },
+  { name: "Naproxen", category: "Pain", dose: "250-500mg", frequency: "Twice daily", icon: Tablets, color: "text-orange-500" },
+  { name: "Tramadol", category: "Pain", dose: "50-100mg", frequency: "Four times daily", icon: Tablets, color: "text-orange-500" },
+  { name: "Codeine", category: "Pain", dose: "15-60mg", frequency: "Four times daily", icon: Tablets, color: "text-orange-500" },
+  { name: "Morphine", category: "Pain", dose: "10-30mg", frequency: "Four hourly", icon: Tablets, color: "text-orange-500" },
+  // Neurology/Psychiatry
+  { name: "Phenytoin", category: "Neurology", dose: "100-200mg", frequency: "Three times daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Carbamazepine", category: "Neurology", dose: "200-400mg", frequency: "Twice daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Valproic Acid", category: "Neurology", dose: "250-500mg", frequency: "Twice daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Phenobarbital", category: "Neurology", dose: "30-120mg", frequency: "Once/Twice daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Levetiracetam", category: "Neurology", dose: "500-1500mg", frequency: "Twice daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Amitriptyline", category: "Psychiatry", dose: "25-150mg", frequency: "Once daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Fluoxetine", category: "Psychiatry", dose: "20-60mg", frequency: "Once daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Sertraline", category: "Psychiatry", dose: "50-200mg", frequency: "Once daily", icon: Brain, color: "text-indigo-500" },
+  { name: "Diazepam", category: "Psychiatry", dose: "2-10mg", frequency: "Two to four times", icon: Brain, color: "text-indigo-500" },
+  { name: "Haloperidol", category: "Psychiatry", dose: "2-10mg", frequency: "Two to three times", icon: Brain, color: "text-indigo-500" },
+  // Musculoskeletal
+  { name: "Methotrexate", category: "Rheumatology", dose: "7.5-25mg", frequency: "Once weekly", icon: Bone, color: "text-teal-500" },
+  { name: "Hydroxychloroquine", category: "Rheumatology", dose: "200-400mg", frequency: "Once daily", icon: Bone, color: "text-teal-500" },
+  { name: "Allopurinol", category: "Rheumatology", dose: "100-300mg", frequency: "Once daily", icon: Bone, color: "text-teal-500" },
+  { name: "Colchicine", category: "Rheumatology", dose: "0.5-0.6mg", frequency: "One to two times", icon: Bone, color: "text-teal-500" },
+  // Other
+  { name: "Ferrous Sulfate", category: "Hematology", dose: "200-325mg", frequency: "Three times daily", icon: Droplets, color: "text-slate-500" },
+  { name: "Folic Acid", category: "Hematology", dose: "1-5mg", frequency: "Once daily", icon: Droplets, color: "text-slate-500" },
+  { name: "Cetirizine", category: "Allergy", dose: "10mg", frequency: "Once daily", icon: Eye, color: "text-sky-500" },
+  { name: "Loratadine", category: "Allergy", dose: "10mg", frequency: "Once daily", icon: Eye, color: "text-sky-500" },
+  { name: "Chlorpheniramine", category: "Allergy", dose: "4mg", frequency: "Three times daily", icon: Eye, color: "text-sky-500" },
+  { name: "Prednisolone", category: "Steroids", dose: "5-60mg", frequency: "Once daily", icon: Tablets, color: "text-yellow-500" },
+  { name: "Hydrocortisone", category: "Steroids", dose: "20-100mg", frequency: "Two to four times", icon: Tablets, color: "text-yellow-500" },
+];
+
+// Get unique categories
+const MEDICATION_CATEGORIES = [...new Set(COMMON_MEDICATIONS.map(m => m.category))];
+
 // Common drug aliases
 const DRUG_ALIASES: Record<string, string> = {
   "coumadin": "warfarin",
@@ -223,6 +333,11 @@ export function EnhancedDrugInteraction({ preselectedPatientId }: EnhancedDrugIn
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [realtimeAlerts, setRealtimeAlerts] = useState(true);
   const [scanHistory, setScanHistory] = useState<{ timestamp: Date; count: number }[]>([]);
+  
+  // New state for medication dropdown
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedMedicationKey, setSelectedMedicationKey] = useState<string>("");
+  const [isCustomMedication, setIsCustomMedication] = useState(false);
 
   // Normalize drug name
   const normalizeDrugName = (name: string): string => {
@@ -298,26 +413,73 @@ export function EnhancedDrugInteraction({ preselectedPatientId }: EnhancedDrugIn
 
   // Add medication
   const addMedication = () => {
-    if (!newMedication.trim()) {
-      toast.error("Please enter a medication name");
-      return;
+    let medName = "";
+    let medDose = newDose;
+    let medFreq = newFrequency;
+    
+    if (isCustomMedication) {
+      // Custom medication entry
+      if (!newMedication.trim()) {
+        toast.error("Please enter a medication name");
+        return;
+      }
+      medName = newMedication.trim();
+    } else {
+      // Dropdown selection
+      if (!selectedMedicationKey) {
+        toast.error("Please select a medication from the dropdown");
+        return;
+      }
+      const selectedMed = COMMON_MEDICATIONS.find(m => m.name === selectedMedicationKey);
+      if (selectedMed) {
+        medName = selectedMed.name;
+        // Use default dose and frequency if not overridden
+        if (!medDose) medDose = selectedMed.dose;
+        if (!medFreq) medFreq = selectedMed.frequency;
+      }
     }
 
     const med: MedicationEntry = {
       id: `med-${Date.now()}`,
-      name: newMedication.trim(),
-      dose: newDose,
-      frequency: newFrequency,
+      name: medName,
+      dose: medDose,
+      frequency: medFreq,
       route: newRoute,
     };
 
     setMedications(prev => [...prev, med]);
+    
+    // Reset form
     setNewMedication("");
     setNewDose("");
     setNewFrequency("");
     setNewRoute("oral");
+    setSelectedCategory("");
+    setSelectedMedicationKey("");
+    setIsCustomMedication(false);
     setShowAddDialog(false);
     toast.success(`Added ${med.name}`);
+  };
+  
+  // Handle medication selection from dropdown
+  const handleMedicationSelect = (medName: string) => {
+    if (medName === "other") {
+      setIsCustomMedication(true);
+      setSelectedMedicationKey("");
+    } else {
+      setIsCustomMedication(false);
+      setSelectedMedicationKey(medName);
+      const selectedMed = COMMON_MEDICATIONS.find(m => m.name === medName);
+      if (selectedMed) {
+        setNewDose(selectedMed.dose);
+        setNewFrequency(selectedMed.frequency);
+      }
+    }
+  };
+  
+  // Get medications by category
+  const getMedicationsByCategory = (category: string) => {
+    return COMMON_MEDICATIONS.filter(m => m.category === category);
   };
 
   // Remove medication
@@ -430,76 +592,166 @@ export function EnhancedDrugInteraction({ preselectedPatientId }: EnhancedDrugIn
                     Add
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Medication</DialogTitle>
-                    <DialogDescription>Enter medication details for interaction checking</DialogDescription>
+                    <DialogDescription>Select from common medications or enter a custom medication</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 mt-4">
+                    {/* Category Selection */}
                     <div className="space-y-2">
-                      <Label>Medication Name</Label>
-                      <div className="relative">
-                        <Input
-                          placeholder="e.g., Warfarin"
-                          value={newMedication}
-                          onChange={(e) => setNewMedication(e.target.value)}
-                        />
-                        {searchQuery && searchSuggestions.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 bg-white border rounded-lg mt-1 shadow-lg z-10">
-                            {searchSuggestions.map((s) => (
-                              <button
-                                key={s}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm"
-                                onClick={() => {
-                                  setNewMedication(s.charAt(0).toUpperCase() + s.slice(1));
-                                  setSearchQuery("");
-                                }}
-                              >
-                                {s.charAt(0).toUpperCase() + s.slice(1)}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label>Dose</Label>
-                        <Input
-                          placeholder="e.g., 5mg"
-                          value={newDose}
-                          onChange={(e) => setNewDose(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Frequency</Label>
-                        <Input
-                          placeholder="e.g., daily"
-                          value={newFrequency}
-                          onChange={(e) => setNewFrequency(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Route</Label>
-                      <Select value={newRoute} onValueChange={setNewRoute}>
+                      <Label>Category</Label>
+                      <Select value={selectedCategory} onValueChange={(val) => {
+                        setSelectedCategory(val);
+                        setSelectedMedicationKey("");
+                        setIsCustomMedication(false);
+                      }}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select medication category..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="oral">Oral</SelectItem>
-                          <SelectItem value="iv">IV</SelectItem>
-                          <SelectItem value="im">IM</SelectItem>
-                          <SelectItem value="sc">Subcutaneous</SelectItem>
-                          <SelectItem value="topical">Topical</SelectItem>
-                          <SelectItem value="inhaled">Inhaled</SelectItem>
+                          {MEDICATION_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* Medication Selection or Custom Entry */}
+                    {selectedCategory && (
+                      <div className="space-y-2">
+                        <Label>Medication Name</Label>
+                        <Select value={selectedMedicationKey} onValueChange={handleMedicationSelect}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select medication..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getMedicationsByCategory(selectedCategory).map((med) => {
+                              const IconComponent = med.icon;
+                              return (
+                                <SelectItem key={med.name} value={med.name}>
+                                  <div className="flex items-center gap-2">
+                                    <IconComponent className={`h-4 w-4 ${med.color}`} />
+                                    <span>{med.name}</span>
+                                    <span className="text-xs text-slate-400">({med.dose})</span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                            <SelectItem value="other">
+                              <div className="flex items-center gap-2 text-amber-600">
+                                <Plus className="h-4 w-4" />
+                                <span>Other (Enter manually)</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    {/* Custom Medication Input (shown when "Other" is selected) */}
+                    {isCustomMedication && (
+                      <div className="space-y-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <Label className="text-amber-800">Enter Custom Medication</Label>
+                        <Input
+                          placeholder="Enter medication name..."
+                          value={newMedication}
+                          onChange={(e) => setNewMedication(e.target.value)}
+                          className="border-amber-300"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Selected Medication Info */}
+                    {selectedMedicationKey && !isCustomMedication && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          {(() => {
+                            const med = COMMON_MEDICATIONS.find(m => m.name === selectedMedicationKey);
+                            if (med) {
+                              const IconComponent = med.icon;
+                              return (
+                                <>
+                                  <IconComponent className={`h-5 w-5 ${med.color}`} />
+                                  <span className="font-medium">{med.name}</span>
+                                </>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          Standard dose: {COMMON_MEDICATIONS.find(m => m.name === selectedMedicationKey)?.dose}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          Frequency: {COMMON_MEDICATIONS.find(m => m.name === selectedMedicationKey)?.frequency}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Dose and Frequency (editable) */}
+                    {(selectedMedicationKey || isCustomMedication) && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label>Dose {isCustomMedication && "*"}</Label>
+                            <Input
+                              placeholder="e.g., 5mg"
+                              value={newDose}
+                              onChange={(e) => setNewDose(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Frequency {isCustomMedication && "*"}</Label>
+                            <Input
+                              placeholder="e.g., daily"
+                              value={newFrequency}
+                              onChange={(e) => setNewFrequency(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Route</Label>
+                          <Select value={newRoute} onValueChange={setNewRoute}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="oral">Oral</SelectItem>
+                              <SelectItem value="iv">IV</SelectItem>
+                              <SelectItem value="im">IM</SelectItem>
+                              <SelectItem value="sc">Subcutaneous</SelectItem>
+                              <SelectItem value="topical">Topical</SelectItem>
+                              <SelectItem value="inhaled">Inhaled</SelectItem>
+                              <SelectItem value="ophthalmic">Ophthalmic</SelectItem>
+                              <SelectItem value="otic">Otic (Ear)</SelectItem>
+                              <SelectItem value="nasal">Nasal</SelectItem>
+                              <SelectItem value="rectal">Rectal</SelectItem>
+                              <SelectItem value="vaginal">Vaginal</SelectItem>
+                              <SelectItem value="transdermal">Transdermal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <DialogFooter className="mt-4">
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                    <Button onClick={addMedication}>Add Medication</Button>
+                    <Button variant="outline" onClick={() => {
+                      setShowAddDialog(false);
+                      setSelectedCategory("");
+                      setSelectedMedicationKey("");
+                      setIsCustomMedication(false);
+                      setNewMedication("");
+                      setNewDose("");
+                      setNewFrequency("");
+                    }}>Cancel</Button>
+                    <Button 
+                      onClick={addMedication}
+                      disabled={!selectedMedicationKey && !isCustomMedication}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Medication
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

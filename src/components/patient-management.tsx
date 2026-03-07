@@ -92,6 +92,30 @@ interface PatientManagementProps {
   onNavigate?: (moduleId: string, patientId?: string) => void;
 }
 
+// Ethiopian Cities
+const ethiopianCities = [
+  "Addis Ababa", "Dire Dawa", "Mekelle", "Gondar", "Bahir Dar",
+  "Jimma", "Dessie", "Hawassa", "Adama", "Harar",
+  "Jijiga", "Shashamane", "Debre Markos", "Debre Birhan", "Nekemte",
+  "Arba Minch", "Wolisso", "Hosaena", "Kombolcha", "Sodo"
+];
+
+// Common Allergies
+const commonAllergies = [
+  "Penicillin", "Sulfa drugs", "Aspirin", "Ibuprofen", "Codeine",
+  "Latex", "Peanuts", "Shellfish", "Eggs", "Milk",
+  "Contrast Dye", "Iodine", "None Known", "Other"
+];
+
+// Common Chronic Conditions
+const commonChronicConditions = [
+  "Hypertension", "Type 2 Diabetes Mellitus", "Type 1 Diabetes Mellitus",
+  "Asthma", "COPD", "Hypothyroidism", "Hyperthyroidism",
+  "Rheumatoid Arthritis", "Chronic Kidney Disease", "Heart Failure",
+  "Atrial Fibrillation", "Epilepsy", "HIV/AIDS", "Tuberculosis",
+  "None", "Other"
+];
+
 export function PatientManagement({ onNavigate }: PatientManagementProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,6 +123,10 @@ export function PatientManagement({ onNavigate }: PatientManagementProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [otherAllergy, setOtherAllergy] = useState("");
+  const [otherCondition, setOtherCondition] = useState("");
   const { toast } = useToast();
 
   const [newPatient, setNewPatient] = useState({
@@ -178,6 +206,10 @@ export function PatientManagement({ onNavigate }: PatientManagementProps) {
           emergencyContactRelationship: "",
           emergencyContactPhone: "",
         });
+        setSelectedAllergies([]);
+        setSelectedConditions([]);
+        setOtherAllergy("");
+        setOtherCondition("");
         fetchPatients();
       } else {
         throw new Error(data.error);
@@ -376,31 +408,179 @@ export function PatientManagement({ onNavigate }: PatientManagementProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    placeholder="City"
+                  <Select
                     value={newPatient.city}
-                    onChange={(e) => setNewPatient({ ...newPatient, city: e.target.value })}
-                  />
+                    onValueChange={(value) => setNewPatient({ ...newPatient, city: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ethiopianCities.map((city) => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+              {/* Allergies Selection */}
               <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies</Label>
-                <Input
-                  id="allergies"
-                  placeholder="Separate with commas (e.g., Penicillin, Peanuts)"
-                  value={newPatient.allergies}
-                  onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
-                />
+                <Label>Allergies</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedAllergies.map((allergy) => (
+                    <Badge
+                      key={allergy}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-red-100 hover:text-red-700"
+                      onClick={() => {
+                        const updated = selectedAllergies.filter((a) => a !== allergy);
+                        setSelectedAllergies(updated);
+                        setNewPatient({ ...newPatient, allergies: updated.join(", ") });
+                      }}
+                    >
+                      {allergy} <span className="ml-1">×</span>
+                    </Badge>
+                  ))}
+                </div>
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value === "Other") {
+                      // Add "Other" placeholder to show input field
+                      if (!selectedAllergies.includes("Other")) {
+                        const updated = [...selectedAllergies, "Other"];
+                        setSelectedAllergies(updated);
+                        setOtherAllergy("");
+                      }
+                    } else if (!selectedAllergies.includes(value)) {
+                      const updated = [...selectedAllergies, value];
+                      setSelectedAllergies(updated);
+                      setNewPatient({ ...newPatient, allergies: updated.join(", ") });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select allergies (click to add)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonAllergies.filter((a) => !selectedAllergies.includes(a)).map((allergy) => (
+                      <SelectItem key={allergy} value={allergy}>{allergy}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedAllergies.includes("Other") && (
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      placeholder="Type the allergy name and press Enter to add"
+                      value={otherAllergy}
+                      onChange={(e) => setOtherAllergy(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && otherAllergy.trim()) {
+                          // Replace "Other" with the typed value
+                          const updated = selectedAllergies.map((a) => a === "Other" ? otherAllergy.trim() : a);
+                          setSelectedAllergies(updated);
+                          setNewPatient({ ...newPatient, allergies: updated.join(", ") });
+                          setOtherAllergy("");
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (otherAllergy.trim()) {
+                          const updated = selectedAllergies.map((a) => a === "Other" ? otherAllergy.trim() : a);
+                          setSelectedAllergies(updated);
+                          setNewPatient({ ...newPatient, allergies: updated.join(", ") });
+                          setOtherAllergy("");
+                        }
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                )}
               </div>
+
+              {/* Chronic Conditions Selection */}
               <div className="space-y-2">
-                <Label htmlFor="chronicConditions">Chronic Conditions</Label>
-                <Input
-                  id="chronicConditions"
-                  placeholder="Separate with commas (e.g., Diabetes, Hypertension)"
-                  value={newPatient.chronicConditions}
-                  onChange={(e) => setNewPatient({ ...newPatient, chronicConditions: e.target.value })}
-                />
+                <Label>Chronic Conditions</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedConditions.map((condition) => (
+                    <Badge
+                      key={condition}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-amber-100 hover:text-amber-700"
+                      onClick={() => {
+                        const updated = selectedConditions.filter((c) => c !== condition);
+                        setSelectedConditions(updated);
+                        setNewPatient({ ...newPatient, chronicConditions: updated.join(", ") });
+                      }}
+                    >
+                      {condition} <span className="ml-1">×</span>
+                    </Badge>
+                  ))}
+                </div>
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value === "Other") {
+                      // Add "Other" placeholder to show input field
+                      if (!selectedConditions.includes("Other")) {
+                        const updated = [...selectedConditions, "Other"];
+                        setSelectedConditions(updated);
+                        setOtherCondition("");
+                      }
+                    } else if (!selectedConditions.includes(value)) {
+                      const updated = [...selectedConditions, value];
+                      setSelectedConditions(updated);
+                      setNewPatient({ ...newPatient, chronicConditions: updated.join(", ") });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select conditions (click to add)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonChronicConditions.filter((c) => !selectedConditions.includes(c)).map((condition) => (
+                      <SelectItem key={condition} value={condition}>{condition}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedConditions.includes("Other") && (
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      placeholder="Type the condition name and press Enter to add"
+                      value={otherCondition}
+                      onChange={(e) => setOtherCondition(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && otherCondition.trim()) {
+                          // Replace "Other" with the typed value
+                          const updated = selectedConditions.map((c) => c === "Other" ? otherCondition.trim() : c);
+                          setSelectedConditions(updated);
+                          setNewPatient({ ...newPatient, chronicConditions: updated.join(", ") });
+                          setOtherCondition("");
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (otherCondition.trim()) {
+                          const updated = selectedConditions.map((c) => c === "Other" ? otherCondition.trim() : c);
+                          setSelectedConditions(updated);
+                          setNewPatient({ ...newPatient, chronicConditions: updated.join(", ") });
+                          setOtherCondition("");
+                        }
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                )}
               </div>
               
               {/* Emergency Contact Section */}
