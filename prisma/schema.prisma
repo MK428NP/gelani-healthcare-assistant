@@ -57,6 +57,7 @@ model Patient {
   medications     PatientMedication[]
   documents       MedicalDocument[]
   vitals          VitalSigns[]
+  labOrders       LabOrder[]
   labResults      LabResult[]
   aiInteractions  AIInteraction[]
   diagnoses       Diagnosis[]
@@ -191,11 +192,80 @@ model VitalSigns {
   createdAt       DateTime @default(now())
 }
 
-/// Lab results
+/// Lab Orders - Doctor orders lab tests
+model LabOrder {
+  id              String   @id @default(cuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  consultationId  String?
+  
+  // Order Details
+  orderNumber     String   @unique // LAB-2024-0001
+  orderDate       DateTime @default(now())
+  priority        String   @default("routine") // routine, urgent, stat
+  status          String   @default("pending") // pending, collected, in-lab, completed, cancelled
+  
+  // Clinical Info
+  clinicalNotes   String?  // Reason for test
+  diagnosis       String?  // Working diagnosis
+  
+  // Ordering Provider
+  orderedBy       String?  // Doctor name
+  department      String?
+  
+  // Sample Info
+  sampleCollected   Boolean @default(false)
+  collectedAt       DateTime?
+  collectedBy       String?  // Who collected the sample
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  orderItems      LabOrderItem[]
+  labResults      LabResult[]
+}
+
+/// Lab Order Items - Individual tests in an order
+model LabOrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           LabOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Test Details
+  testName        String
+  testCode        String?
+  category        String?  // haematology, chemistry, urinalysis, etc.
+  subcategory     String?  // CBC, Renal, Liver, etc.
+  
+  // Reference
+  unit            String?
+  referenceRange  String?
+  
+  // Status
+  status          String   @default("pending") // pending, collected, in-progress, completed, cancelled
+  
+  // Result (filled by lab technician)
+  resultValue     String?
+  interpretation  String?  // normal, abnormal, critical
+  resultNotes     String?
+  
+  // Timestamps
+  resultEnteredAt DateTime?
+  enteredBy       String?  // Lab technician
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Lab Results - Completed results (historical record)
 model LabResult {
   id              String   @id @default(cuid())
   patientId       String
   patient         Patient  @relation(fields: [patientId], references: [id])
+  orderId         String?
+  order           LabOrder? @relation(fields: [orderId], references: [id])
   
   // Lab Details
   testName        String
@@ -215,6 +285,9 @@ model LabResult {
   // AI Analysis
   aiInterpretation String?
   aiAlertFlag      Boolean @default(false)
+  
+  // Who entered
+  enteredBy       String?
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Pill, Stethoscope, Activity, FileText, Syringe, Heart, Brain, Beaker, Building2, AlertCircle } from "lucide-react";
 import { searchMedicalTerms, type MedicalTerm } from "@/lib/medical-dictionary";
 import { cn } from "@/lib/utils";
+import { VoiceInputButton } from "@/components/voice-input-button";
 
 // Category icons and colors
 const categoryConfig: Record<string, { icon: React.ElementType; color: string }> = {
@@ -44,6 +45,8 @@ interface MedicalAutocompleteTextareaProps {
   rows?: number;
   label?: string;
   labelClassName?: string;
+  enableVoiceInput?: boolean;
+  voiceContext?: "medical" | "general" | "consultation" | "notes";
 }
 
 export function MedicalAutocompleteTextarea({
@@ -58,6 +61,8 @@ export function MedicalAutocompleteTextarea({
   rows = 3,
   label,
   labelClassName,
+  enableVoiceInput = true,
+  voiceContext = "medical",
 }: MedicalAutocompleteTextareaProps) {
   const [suggestions, setSuggestions] = useState<MedicalTerm[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -222,13 +227,32 @@ export function MedicalAutocompleteTextarea({
           rows={rows}
         />
         
-        {/* Autocomplete indicator */}
-        <div className="absolute right-2 top-2 pointer-events-none">
-          <Activity className={cn(
-            "h-3.5 w-3.5 transition-opacity",
-            showSuggestions ? "text-emerald-500 animate-pulse" : "text-slate-300"
-          )} />
-        </div>
+        {/* Voice Input Button */}
+        {enableVoiceInput && (
+          <div className="absolute right-2 top-2">
+            <VoiceInputButton
+              onTranscript={(text) => {
+                const newValue = value ? `${value} ${text}` : text;
+                onChange(newValue);
+              }}
+              currentValue={value}
+              context={voiceContext}
+              size="sm"
+              variant="ghost"
+              className="bg-white/80 hover:bg-white h-7 w-7"
+            />
+          </div>
+        )}
+        
+        {/* Autocomplete indicator - moved down if voice is enabled */}
+        {!enableVoiceInput && (
+          <div className="absolute right-2 top-2 pointer-events-none">
+            <Activity className={cn(
+              "h-3.5 w-3.5 transition-opacity",
+              showSuggestions ? "text-emerald-500 animate-pulse" : "text-slate-300"
+            )} />
+          </div>
+        )}
       </div>
 
       {/* Suggestions Dropdown */}

@@ -52,8 +52,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { MedicalAutocompleteTextarea } from "@/components/medical-autocomplete-textarea";
-import { LabResultsInput } from "@/components/lab-results-input";
+import { LabModule } from "@/components/lab-module";
 import { ClinicalVoiceRecorder } from "@/components/clinical-voice-recorder";
+import { MedASRInput } from "@/components/medasr-input";
+import { VoiceInputButton } from "@/components/voice-input-button";
 
 interface Patient {
   id: string;
@@ -555,7 +557,7 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                         <Label className="text-sm font-medium text-blue-600">S - Subjective</Label>
                         <MedicalAutocompleteTextarea
                           className="mt-1"
-                          placeholder="Patient's description of symptoms... (type to see medical term suggestions)"
+                          placeholder="Patient's description of symptoms... (type or use 🎤 voice)"
                           value={selectedConsultation.subjectiveNotes || ""}
                           onChange={(value) =>
                             setSelectedConsultation({
@@ -567,13 +569,15 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                             handleUpdateConsultation("subjectiveNotes", e.target.value)
                           }
                           rows={4}
+                          enableVoiceInput={true}
+                          voiceContext="consultation"
                         />
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-emerald-600">O - Objective</Label>
                         <MedicalAutocompleteTextarea
                           className="mt-1"
-                          placeholder="Clinical findings and observations... (type to see medical term suggestions)"
+                          placeholder="Clinical findings and observations... (type or use 🎤 voice)"
                           value={selectedConsultation.objectiveNotes || ""}
                           onChange={(value) =>
                             setSelectedConsultation({
@@ -585,13 +589,15 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                             handleUpdateConsultation("objectiveNotes", e.target.value)
                           }
                           rows={4}
+                          enableVoiceInput={true}
+                          voiceContext="consultation"
                         />
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-purple-600">A - Assessment</Label>
                         <MedicalAutocompleteTextarea
                           className="mt-1"
-                          placeholder="Diagnosis and clinical impression... (type to see medical term suggestions)"
+                          placeholder="Diagnosis and clinical impression... (type or use 🎤 voice)"
                           value={selectedConsultation.assessment || ""}
                           onChange={(value) =>
                             setSelectedConsultation({
@@ -601,13 +607,15 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                           }
                           onBlur={(e) => handleUpdateConsultation("assessment", e.target.value)}
                           rows={3}
+                          enableVoiceInput={true}
+                          voiceContext="medical"
                         />
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-amber-600">P - Plan</Label>
                         <MedicalAutocompleteTextarea
                           className="mt-1"
-                          placeholder="Treatment plan and follow-up... (type to see medical term suggestions)"
+                          placeholder="Treatment plan and follow-up... (type or use 🎤 voice)"
                           value={selectedConsultation.plan || ""}
                           onChange={(value) =>
                             setSelectedConsultation({
@@ -617,6 +625,8 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                           }
                           onBlur={(e) => handleUpdateConsultation("plan", e.target.value)}
                           rows={3}
+                          enableVoiceInput={true}
+                          voiceContext="consultation"
                         />
                       </div>
                     </div>
@@ -642,23 +652,12 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
                   </TabsContent>
 
                   <TabsContent value="lab" className="mt-4">
-                    <Card className="border-0 shadow-md">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <TestTube className="h-5 w-5 text-emerald-500" />
-                          Laboratory Results
-                        </CardTitle>
-                        <CardDescription>
-                          Enter and manage patient lab results with AI-assisted test name suggestions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <LabResultsInput 
-                          patientId={selectedConsultation.patientId}
-                          consultationId={selectedConsultation.id}
-                        />
-                      </CardContent>
-                    </Card>
+                    <LabModule 
+                      patientId={selectedConsultation.patientId}
+                      patientGender={patients.find((p: Patient) => p.id === selectedConsultation.patientId)?.gender}
+                      patientName={getPatientName(selectedConsultation.patientId)}
+                      mode="both"
+                    />
                   </TabsContent>
 
                   <TabsContent value="ai" className="mt-4">
