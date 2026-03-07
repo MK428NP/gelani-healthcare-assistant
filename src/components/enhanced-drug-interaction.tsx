@@ -49,6 +49,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { VoiceInputButton } from "@/components/voice-input-button";
 
 // Drug database with interaction data
 const DRUG_DATABASE = {
@@ -653,12 +654,24 @@ export function EnhancedDrugInteraction({ preselectedPatientId }: EnhancedDrugIn
                     {isCustomMedication && (
                       <div className="space-y-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <Label className="text-amber-800">Enter Custom Medication</Label>
-                        <Input
-                          placeholder="Enter medication name..."
-                          value={newMedication}
-                          onChange={(e) => setNewMedication(e.target.value)}
-                          className="border-amber-300"
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Enter medication name... (or use 🎤 voice)"
+                            value={newMedication}
+                            onChange={(e) => setNewMedication(e.target.value)}
+                            className="border-amber-300 pr-10"
+                          />
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <VoiceInputButton
+                              onTranscript={(text) => setNewMedication(text)}
+                              currentValue={newMedication}
+                              context="medical"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7"
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                     

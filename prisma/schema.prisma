@@ -602,3 +602,165 @@ model RLFeedback {
   
   createdAt       DateTime @default(now())
 }
+
+// ============================================
+// RAG HEALTHCARE KNOWLEDGE BASE
+// ============================================
+
+/// Healthcare Knowledge Base for RAG
+model HealthcareKnowledge {
+  id              String   @id @default(cuid())
+  
+  // Content
+  title           String
+  content         String   // Main knowledge content
+  summary         String?  // Brief summary for quick retrieval
+  
+  // Classification
+  category        String   // drug-interaction, clinical-guideline, symptom, condition, treatment, lab-interpretation
+  subcategory     String?  // More specific classification
+  specialty       String?  // cardiology, neurology, general, etc.
+  
+  // Tags for semantic search (stored as JSON array)
+  keywords        String?  // JSON array of keywords
+  icdCodes        String?  // JSON array of related ICD-10 codes
+  snomedCodes     String?  // JSON array of related SNOMED codes
+  drugNames       String?  // JSON array of related drug names
+  
+  // Source Information
+  source          String?  // clinical-guideline, drug-database, research-paper, who, cdc
+  sourceUrl       String?
+  sourceDate      DateTime?
+  evidenceLevel   String?  // A, B, C, D (evidence-based medicine levels)
+  
+  // Content metadata
+  language        String   @default("en")
+  version         String?
+  lastReviewed    DateTime?
+  isActive        Boolean  @default(true)
+  
+  // Usage statistics for RAG optimization
+  retrievalCount  Int      @default(0)
+  usefulnessScore Float    @default(0.5)  // 0-1 based on feedback
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// RAG Query Log - tracks queries for optimization
+model RAGQuery {
+  id              String   @id @default(cuid())
+  
+  // Query details
+  queryText       String
+  queryType       String   // text, voice, clinical-question, drug-check
+  
+  // Retrieved knowledge
+  knowledgeIds    String?  // JSON array of HealthcareKnowledge IDs retrieved
+  retrievalCount  Int      @default(0)
+  
+  // AI Response
+  aiResponse      String?
+  responseTime    Int?     // milliseconds
+  
+  // Quality feedback
+  wasHelpful      Boolean?
+  userRating      Int?     // 1-5 stars
+  
+  // Context
+  patientId       String?
+  consultationId  String?
+  userId          String?
+  
+  createdAt       DateTime @default(now())
+}
+
+/// Drug Interaction Knowledge (specialized for drug checking)
+model DrugInteractionKnowledge {
+  id              String   @id @default(cuid())
+  
+  // Drugs involved
+  drug1Name       String
+  drug1Generic    String?
+  drug2Name       String
+  drug2Generic    String?
+  
+  // Interaction details
+  severity        String   // contraindicated, major, moderate, minor, none
+  mechanism       String?  // pharmacokinetic, pharmacodynamic
+  description     String
+  clinicalEffects String?  // JSON array of effects
+  management      String?  // How to manage the interaction
+  
+  // Evidence
+  evidenceLevel   String?
+  literatureRef   String?
+  
+  // Time factors
+  onset           String?  // rapid, delayed
+  duration        String?
+  
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Clinical Guideline Knowledge
+model ClinicalGuidelineKnowledge {
+  id              String   @id @default(cuid())
+  
+  // Guideline info
+  title           String
+  guidelineId     String?  // External guideline ID
+  organization    String?  // WHO, CDC, AHA, etc.
+  
+  // Content
+  condition       String   // Condition this guideline addresses
+  icdCode         String?
+  summary         String
+  fullContent     String
+  
+  // Classification
+  specialty       String?
+  patientGroup    String?  // adult, pediatric, geriatric, pregnancy
+  
+  // Recommendations (JSON array)
+  recommendations String?
+  diagnosticCriteria String?
+  treatmentOptions String?
+  
+  // Evidence
+  evidenceLevel   String?
+  lastUpdated     DateTime?
+  validUntil      DateTime?
+  
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Symptom Condition Mapping (for differential diagnosis)
+model SymptomConditionMapping {
+  id              String   @id @default(cuid())
+  
+  // Symptom details
+  symptomName     String
+  symptomCategory String?  // pain, respiratory, cardiac, neurological, etc.
+  
+  // Related conditions (JSON array of condition objects)
+  conditions      String   // JSON: [{condition, icdCode, probability, urgency}]
+  
+  // Context modifiers
+  ageGroup        String?  // pediatric, adult, geriatric
+  genderSpecific  String?  // male, female, null for both
+  riskFactors     String?  // JSON array of associated risk factors
+  
+  // Diagnostic value
+  sensitivity     Float?   // 0-1
+  specificity     Float?   // 0-1
+  positiveLikelihoodRatio Float?
+  
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -45,7 +45,7 @@ import { PatientManagement } from "@/components/patient-management";
 import { ConsultationModule } from "@/components/consultation-module";
 import { DocumentationAssistant } from "@/components/documentation-assistant";
 import { DrugInteractionChecker } from "@/components/drug-interaction-checker";
-import { EnhancedDrugInteraction } from "@/components/enhanced-drug-interaction";
+import PatientDrugChecker from "@/components/patient-drug-checker";
 import { ImageAnalysis } from "@/components/image-analysis";
 import { VoiceTranscription } from "@/components/voice-transcription";
 import { EnhancedVoiceDocumentation } from "@/components/enhanced-voice-documentation";
@@ -58,19 +58,29 @@ import { AdvancedAIIntelligence } from "@/components/advanced-ai-intelligence";
 import { RoleBasedAccessControl } from "@/components/role-based-access-control";
 import { OfflineSupport } from "@/components/offline-support";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { VoiceInputButton } from "@/components/voice-input-button";
+import { RAGHealthcareAssistant } from "@/components/rag-healthcare-assistant";
+import { HealthcareAIFeatures } from "@/components/healthcare-ai-features";
 
 const sidebarItems = [
+  // Main Clinical Features
   { id: "dashboard", label: "Dashboard", icon: Activity },
   { id: "patients", label: "Patients", icon: Users },
   { id: "consultations", label: "Consultations", icon: Stethoscope },
-  { id: "advanced-ai", label: "AI Intelligence", icon: Zap },
-  { id: "clinical-support", label: "Clinical Support", icon: Brain },
-  { id: "rl-dashboard", label: "AI Learning", icon: Sparkles },
+  { id: "rag-healthcare", label: "RAG Healthcare", icon: Database },
+  { id: "healthcare-ai", label: "Healthcare AI", icon: Brain },
+  { id: "clinical-support", label: "Clinical Support", icon: Activity },
   { id: "documentation", label: "Documentation", icon: FileText },
   { id: "drugs", label: "Drug Safety", icon: Pill },
   { id: "imaging", label: "Medical Imaging", icon: ImageIcon },
-  { id: "voice", label: "Voice Notes", icon: Mic },
+];
+
+// Configuration/Integration section (shown at bottom)
+const configItems = [
+  { id: "advanced-ai", label: "AI Intelligence", icon: Zap },
+  { id: "rl-dashboard", label: "AI Learning", icon: Sparkles },
   { id: "bahmni", label: "Integrations", icon: Database },
+  { id: "voice", label: "Voice Notes", icon: Mic },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -96,6 +106,10 @@ export default function AIHealthcareDashboard() {
         return <PatientManagement onNavigate={handleNavigate} />;
       case "consultations":
         return <ConsultationModule preselectedPatientId={selectedPatientId} />;
+      case "rag-healthcare":
+        return <RAGHealthcareAssistant preselectedPatientId={selectedPatientId} />;
+      case "healthcare-ai":
+        return <HealthcareAIFeatures />;
       case "advanced-ai":
         return <AdvancedAIIntelligence preselectedPatientId={selectedPatientId} />;
       case "clinical-support":
@@ -105,7 +119,7 @@ export default function AIHealthcareDashboard() {
       case "documentation":
         return <DocumentationAssistant preselectedPatientId={selectedPatientId} />;
       case "drugs":
-        return <EnhancedDrugInteraction preselectedPatientId={selectedPatientId} />;
+        return <PatientDrugChecker preselectedPatientId={selectedPatientId} />;
       case "imaging":
         return <ImageAnalysis preselectedPatientId={selectedPatientId} />;
       case "voice":
@@ -146,7 +160,7 @@ export default function AIHealthcareDashboard() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   Gelani AI Healthcare Assistant
                 </h1>
-                <p className="text-xs text-slate-500">Powered by Bahmni Integration</p>
+                <p className="text-xs text-slate-500">AI-Powered Clinical Decision Support</p>
               </div>
             </div>
           </div>
@@ -158,13 +172,20 @@ export default function AIHealthcareDashboard() {
                 placeholder="Search patients, records..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-50 border-slate-200"
+                className="pl-10 pr-10 bg-slate-50 border-slate-200"
               />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <VoiceInputButton
+                  onTranscript={(text) => setSearchQuery(text)}
+                  currentValue={searchQuery}
+                  context="medical"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  showStatus={false}
+                />
+              </div>
             </div>
-            <Badge variant="outline" className="hidden sm:flex items-center gap-1 bg-emerald-50 border-emerald-200 text-emerald-700">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Connected to Bahmni
-            </Badge>
             <ThemeToggle />
             <Avatar className="h-8 w-8">
               <AvatarImage src="" />
@@ -187,6 +208,7 @@ export default function AIHealthcareDashboard() {
           `}
         >
           <ScrollArea className="h-full py-4">
+            {/* Main Clinical Features */}
             <nav className="px-3 space-y-1">
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
@@ -217,8 +239,44 @@ export default function AIHealthcareDashboard() {
               })}
             </nav>
 
+            {/* Configuration Section */}
             <div className="px-3 mt-6">
-              <Separator className="my-4" />
+              <Separator className="mb-3" />
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                Configuration
+              </p>
+              <nav className="space-y-1">
+                {configItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeModule === item.id;
+                  return (
+                    <motion.button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveModule(item.id);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                      }}
+                      className={`
+                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                        transition-all duration-200
+                        ${isActive
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25"
+                          : "text-slate-600 hover:bg-slate-100"
+                        }
+                      `}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.label}
+                      {isActive && <ChevronRight className="ml-auto h-4 w-4" />}
+                    </motion.button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="px-3 mt-6">
               <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -255,7 +313,7 @@ export default function AIHealthcareDashboard() {
           <div className="flex items-center gap-4">
             <span>Gelani AI Healthcare Assistant v2.0</span>
             <span>•</span>
-            <span className="text-emerald-600">Bahmni + Odoo Integration Ready</span>
+            <span className="text-emerald-600">RAG-Enhanced Clinical AI</span>
           </div>
           <div className="flex items-center gap-2">
             <span>AI Model: MedGemma</span>
@@ -292,7 +350,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (id: string) => void }) {
           <div>
             <h2 className="text-2xl font-bold mb-2">Welcome to Gelani AI Healthcare Assistant</h2>
             <p className="text-emerald-100 max-w-xl">
-              Integrated with Bahmni HIS for seamless patient care. Use AI-powered clinical decision support, 
+              RAG-enhanced clinical decision support with AI-powered diagnosis assistance, 
               drug interaction checking, and intelligent documentation.
             </p>
           </div>
@@ -415,30 +473,6 @@ function DashboardHome({ onNavigate }: { onNavigate: (id: string) => void }) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Bahmni Integration Status */}
-      <Card className="border-0 shadow-md bg-gradient-to-r from-slate-800 to-slate-900 text-white">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/10 rounded-xl">
-                <Database className="h-8 w-8 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Bahmni HIS Integration</h3>
-                <p className="text-slate-400 text-sm">Connected via FHIR R4 API</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span className="text-emerald-400 font-medium">Connected</span>
-              </div>
-              <p className="text-xs text-slate-400">Last sync: 2 minutes ago</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

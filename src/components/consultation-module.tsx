@@ -22,6 +22,7 @@ import {
   Beaker,
   TestTube,
   Mic,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { MedicalAutocompleteTextarea } from "@/components/medical-autocomplete-textarea";
@@ -56,6 +70,7 @@ import { LabModule } from "@/components/lab-module";
 import { ClinicalVoiceRecorder } from "@/components/clinical-voice-recorder";
 import { MedASRInput } from "@/components/medasr-input";
 import { VoiceInputButton } from "@/components/voice-input-button";
+import { cn } from "@/lib/utils";
 
 interface Patient {
   id: string;
@@ -92,6 +107,8 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
   const [isLoading, setIsLoading] = useState(true);
   const [isNewConsultationOpen, setIsNewConsultationOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
+  const [patientSearchQuery, setPatientSearchQuery] = useState("");
   const { toast } = useToast();
 
   const [newConsultation, setNewConsultation] = useState({
@@ -103,6 +120,21 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
     assessment: "",
     plan: "",
   });
+
+  // Filter patients based on search query
+  const filteredPatients = patients.filter(patient => {
+    if (!patientSearchQuery) return true;
+    const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+    const mrn = patient.mrn.toLowerCase();
+    const query = patientSearchQuery.toLowerCase();
+    return fullName.includes(query) || mrn.includes(query);
+  });
+
+  // Get selected patient name
+  const getSelectedPatientName = () => {
+    const patient = patients.find(p => p.id === newConsultation.patientId);
+    return patient ? `${patient.firstName} ${patient.lastName} (${patient.mrn})` : "Select a patient";
+  };
 
   // Update newConsultation when preselectedPatientId changes
   useEffect(() => {
@@ -293,23 +325,72 @@ export function ConsultationModule({ preselectedPatientId }: ConsultationModuleP
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label>Select Patient *</Label>
-                <Select
-                  value={newConsultation.patientId}
-                  onValueChange={(value) =>
-                    setNewConsultation({ ...newConsultation, patientId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((patient) => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.firstName} {patient.lastName} ({patient.mrn})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={patientSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className={cn(
+                        "truncate",
+                        !newConsultation.patientId && "text-muted-foreground"
+                      )}>
+                        {getSelectedPatientName()}
+                      </span>
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-[var(--radix-popover-trigger-width)] p-0" 
+                    align="start"
+                    sideOffset={5}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandInput 
+                        placeholder="Search patients..." 
+                        value={patientSearchQuery}
+                        onValueChange={setPatientSearchQuery}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No patients found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-y-auto">
+                          {filteredPatients.map((patient) => (
+                            <CommandItem
+                              key={patient.id}
+                              value={patient.id}
+                              onSelect={() => {
+                                setNewConsultation({ ...newConsultation, patientId: patient.id });
+                                setPatientSearchOpen(false);
+                                setPatientSearchQuery("");
+                              }}
+                            >
+                              <div className="flex items-center gap-2 w-full">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs">
+                                    {patient.firstName[0]}{patient.lastName[0]}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">
+                                    {patient.firstName} {patient.lastName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    MRN: {patient.mrn} • {patient.gender} • DOB: {new Date(patient.dateOfBirth).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {newConsultation.patientId === patient.id && (
+                                  <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

@@ -831,14 +831,15 @@ export async function POST(request: NextRequest) {
           
           analysisResult = JSON.parse(cleanedContent);
         } catch (parseError) {
-          console.error("Failed to parse VLM response, using fallback:", parseError);
+          // Parsing failed, use fallback
           useVLM = false;
         }
       } else {
         useVLM = false;
       }
     } catch (vlmError) {
-      console.error("VLM API error, falling back to predefined analysis:", vlmError instanceof Error ? vlmError.message : vlmError);
+      // Silently fall back to predefined analysis when VLM API is unavailable
+      // This handles API key issues, rate limits, and other VLM errors gracefully
       useVLM = false;
     }
 

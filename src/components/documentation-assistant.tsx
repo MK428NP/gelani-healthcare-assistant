@@ -38,6 +38,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { MedicalAutocompleteTextarea } from "@/components/medical-autocomplete-textarea";
 import { ClinicalVoiceRecorder } from "@/components/clinical-voice-recorder";
+import { TTSButton } from "@/components/tts-button";
+import { Volume2 } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -635,9 +637,18 @@ ${soapNote.plan}
                 </TabsList>
 
                 <TabsContent value="subjective" className="space-y-4 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-blue-100 text-blue-700">Patient's Perspective</Badge>
-                    <span className="text-xs text-slate-500">Chief complaint, history, symptoms</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-100 text-blue-700">Patient's Perspective</Badge>
+                      <span className="text-xs text-slate-500">Chief complaint, history, symptoms</span>
+                    </div>
+                    <TTSButton
+                      text={soapNote.subjective || "No subjective notes yet"}
+                      size="sm"
+                      variant="ghost"
+                      showSettings={false}
+                      label="Read Subjective"
+                    />
                   </div>
                   <MedicalAutocompleteTextarea
                     placeholder="Document the patient's chief complaint, history of present illness, review of systems, and relevant history... (type to see medical term suggestions)"
@@ -649,9 +660,18 @@ ${soapNote.plan}
                 </TabsContent>
 
                 <TabsContent value="objective" className="space-y-4 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-emerald-100 text-emerald-700">Clinical Findings</Badge>
-                    <span className="text-xs text-slate-500">Vitals, physical exam, lab results</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-emerald-100 text-emerald-700">Clinical Findings</Badge>
+                      <span className="text-xs text-slate-500">Vitals, physical exam, lab results</span>
+                    </div>
+                    <TTSButton
+                      text={soapNote.objective || "No objective notes yet"}
+                      size="sm"
+                      variant="ghost"
+                      showSettings={false}
+                      label="Read Objective"
+                    />
                   </div>
                   <MedicalAutocompleteTextarea
                     placeholder="Document vital signs, physical examination findings, and relevant diagnostic results... (type to see medical term suggestions)"
@@ -663,9 +683,18 @@ ${soapNote.plan}
                 </TabsContent>
 
                 <TabsContent value="assessment" className="space-y-4 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-purple-100 text-purple-700">Diagnosis</Badge>
-                    <span className="text-xs text-slate-500">Clinical impression, differential diagnosis</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-purple-100 text-purple-700">Diagnosis</Badge>
+                      <span className="text-xs text-slate-500">Clinical impression, differential diagnosis</span>
+                    </div>
+                    <TTSButton
+                      text={soapNote.assessment || "No assessment notes yet"}
+                      size="sm"
+                      variant="ghost"
+                      showSettings={false}
+                      label="Read Assessment"
+                    />
                   </div>
                   <MedicalAutocompleteTextarea
                     placeholder="Document your clinical assessment, diagnoses with ICD codes, and differential diagnoses... (type to see medical term suggestions)"
@@ -685,9 +714,18 @@ ${soapNote.plan}
                 </TabsContent>
 
                 <TabsContent value="plan" className="space-y-4 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-amber-100 text-amber-700">Treatment Plan</Badge>
-                    <span className="text-xs text-slate-500">Medications, orders, follow-up</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-amber-100 text-amber-700">Treatment Plan</Badge>
+                      <span className="text-xs text-slate-500">Medications, orders, follow-up</span>
+                    </div>
+                    <TTSButton
+                      text={soapNote.plan || "No plan notes yet"}
+                      size="sm"
+                      variant="ghost"
+                      showSettings={false}
+                      label="Read Plan"
+                    />
                   </div>
                   <MedicalAutocompleteTextarea
                     placeholder="Document the treatment plan, medications, orders, patient education, and follow-up instructions... (type to see medical term suggestions)"
@@ -712,6 +750,15 @@ ${soapNote.plan}
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-end mb-3">
+            <TTSButton
+              text={`Subjective: ${soapNote.subjective || 'None'}. Objective: ${soapNote.objective || 'None'}. Assessment: ${soapNote.assessment || 'None'}. Plan: ${soapNote.plan || 'None'}`}
+              size="sm"
+              variant="outline"
+              showSettings={false}
+              label="Read Full Note"
+            />
+          </div>
           <ScrollArea className="h-[200px]">
             <div className="bg-white p-4 rounded-lg border font-mono text-sm whitespace-pre-wrap">
               {`PATIENT: ${selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : "[Patient Name]"}

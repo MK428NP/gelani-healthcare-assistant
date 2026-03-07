@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { TTSButton } from "@/components/tts-button";
 
 interface Patient {
   id: string;
@@ -861,10 +862,21 @@ export function ImageAnalysis() {
                   
                   {/* Findings */}
                   <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-cyan-500" />
-                      Radiological Findings
-                    </h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-cyan-500" />
+                        Radiological Findings
+                      </h4>
+                      {analysisResult && analysisResult.findings.length > 0 && (
+                        <TTSButton
+                          text={analysisResult.findings.map(f => `${f.description} in ${f.location}`).join('. ')}
+                          size="sm"
+                          variant="ghost"
+                          showSettings={false}
+                          label="Read Findings"
+                        />
+                      )}
+                    </div>
                     <div className="space-y-2">
                       {analysisResult.findings.map((finding, i) => {
                         const styles = getSeverityStyles(finding.severity);
@@ -896,10 +908,21 @@ export function ImageAnalysis() {
 
                   {/* Impression */}
                   <div>
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4 text-purple-500" />
-                      Clinical Impression
-                    </h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Stethoscope className="h-4 w-4 text-purple-500" />
+                        Clinical Impression
+                      </h4>
+                      {analysisResult && (
+                        <TTSButton
+                          text={analysisResult.impression}
+                          size="sm"
+                          variant="ghost"
+                          showSettings={false}
+                          label="Read Impression"
+                        />
+                      )}
+                    </div>
                     <p className="text-sm text-slate-700 bg-purple-50 p-3 rounded-lg">
                       {analysisResult.impression}
                     </p>
@@ -930,7 +953,18 @@ export function ImageAnalysis() {
 
                   {/* Recommendations */}
                   <div>
-                    <h4 className="font-semibold mb-2">Recommendations</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Recommendations</h4>
+                      {analysisResult && analysisResult.recommendations.length > 0 && (
+                        <TTSButton
+                          text={analysisResult.recommendations.join('. ')}
+                          size="sm"
+                          variant="ghost"
+                          showSettings={false}
+                          label="Read Recommendations"
+                        />
+                      )}
+                    </div>
                     <ul className="space-y-1">
                       {analysisResult.recommendations.map((rec, i) => (
                         <li key={i} className="text-sm text-slate-600 flex items-start gap-2">

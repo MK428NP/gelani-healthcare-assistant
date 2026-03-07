@@ -53,6 +53,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { TTSButton } from "@/components/tts-button";
 
 // ICD-10 Code Database (common codes)
 const ICD10_CODES = {
@@ -679,10 +680,21 @@ export function AdvancedAIIntelligence({ preselectedPatientId }: AdvancedAIIntel
                       <div className="space-y-4">
                         {/* Differential Diagnoses */}
                         <div>
-                          <h4 className="font-medium text-sm text-slate-600 mb-2 flex items-center gap-1">
-                            <Target className="h-4 w-4" />
-                            Differential Diagnoses
-                          </h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-sm text-slate-600 flex items-center gap-1">
+                              <Target className="h-4 w-4" />
+                              Differential Diagnoses
+                            </h4>
+                            {analysisResult && (
+                              <TTSButton
+                                text={analysisResult.differentialDiagnoses.map((d, i) => `${i + 1}. ${d.condition}, probability ${Math.round(d.probability * 100)} percent, urgency ${d.urgency}`).join('. ')}
+                                size="sm"
+                                variant="ghost"
+                                showSettings={false}
+                                label="Read Diagnoses"
+                              />
+                            )}
+                          </div>
                           <div className="space-y-2">
                             {analysisResult.differentialDiagnoses.slice(0, 3).map((ddx, index) => (
                               <div key={ddx.id} className="p-3 bg-slate-50 rounded-lg">
@@ -728,10 +740,21 @@ export function AdvancedAIIntelligence({ preselectedPatientId }: AdvancedAIIntel
 
                         {/* Recommendations */}
                         <div>
-                          <h4 className="font-medium text-sm text-slate-600 mb-2 flex items-center gap-1">
-                            <Lightbulb className="h-4 w-4" />
-                            Clinical Recommendations
-                          </h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-sm text-slate-600 flex items-center gap-1">
+                              <Lightbulb className="h-4 w-4" />
+                              Clinical Recommendations
+                            </h4>
+                            {analysisResult && analysisResult.clinicalRecommendations.length > 0 && (
+                              <TTSButton
+                                text={analysisResult.clinicalRecommendations.join('. ')}
+                                size="sm"
+                                variant="ghost"
+                                showSettings={false}
+                                label="Read Recommendations"
+                              />
+                            )}
+                          </div>
                           <ul className="space-y-1">
                             {analysisResult.clinicalRecommendations.slice(0, 3).map((rec, index) => (
                               <li key={index} className="text-xs text-slate-600 flex items-start gap-2">
@@ -823,6 +846,13 @@ export function AdvancedAIIntelligence({ preselectedPatientId }: AdvancedAIIntel
                             </div>
 
                             <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                              <TTSButton
+                                text={`${ddx.condition}. ${ddx.notes}. Key symptoms: ${ddx.symptoms.join(', ')}. Probability: ${Math.round(ddx.probability * 100)} percent.`}
+                                size="sm"
+                                variant="ghost"
+                                showSettings={false}
+                                label="Read"
+                              />
                               <Button variant="outline" size="sm">
                                 <ThumbsUp className="h-3 w-3 mr-1" />
                                 Correct

@@ -52,7 +52,77 @@ interface VoiceInputButtonProps {
 type RecordingState = "idle" | "recording" | "processing" | "success" | "error";
 
 // ============================================
-// MAIN COMPONENT
+// WEB SPEECH API TYPE DECLARATIONS
+// ============================================
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onnomatch: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  abort(): void;
+  start(): void;
+  stop(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+// ============================================
+// HELPER: Check Web Speech API Support
+// ============================================
+
+function checkSpeechRecognitionSupport(): boolean {
+  if (typeof window === 'undefined') return false;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  return !!SpeechRecognition;
+}
+
+// ============================================
+// MAIN COMPONENT - Using Web Speech API
 // ============================================
 
 export function VoiceInputButton({
@@ -69,84 +139,230 @@ export function VoiceInputButton({
 }: VoiceInputButtonProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [transcript, setTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
+  // Check support once on module level (client-side only)
+  const isSupported = typeof window !== 'undefined' && 
+    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioLevelIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef<string>("");
   
   const { toast } = useToast();
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopRecording();
-      if (timerRef.current) clearInterval(timerRef.current);
+      // Cleanup function defined inline to avoid dependency issues
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (audioLevelIntervalRef.current) {
+        clearInterval(audioLevelIntervalRef.current);
+        audioLevelIntervalRef.current = null;
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
     };
   }, []);
 
-  // Start recording
-  const startRecording = useCallback(async () => {
+  // Medical term post-processing
+  const processMedicalText = useCallback((text: string): string => {
+    if (context !== "medical") return text;
+    
+    // Capitalize common medical terms
+    const medicalTerms = [
+      'patient', 'doctor', 'diagnosis', 'treatment', 'medication', 'symptoms',
+      'blood', 'pressure', 'heart', 'lung', 'chest', 'abdomen', 'fever',
+      'cough', 'pain', 'headache', 'nausea', 'vomiting', 'diarrhea',
+      'diabetes', 'hypertension', 'pneumonia', 'infection', 'antibiotic',
+      'ibuprofen', 'paracetamol', 'aspirin', 'insulin', 'metformin'
+    ];
+    
+    let processed = text;
+    medicalTerms.forEach(term => {
+      const regex = new RegExp(`\\b${term}\\b`, 'gi');
+      processed = processed.replace(regex, term.charAt(0).toUpperCase() + term.slice(1));
+    });
+    
+    return processed;
+  }, [context]);
+
+  // Start recognition
+  const startRecognition = useCallback(async () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      setError("Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.");
+      setState("error");
+      toast({
+        title: "Not Supported",
+        description: "Speech recognition requires Chrome, Edge, or Safari.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setError(null);
       setTranscript("");
+      setInterimTranscript("");
       setRecordingTime(0);
-      audioChunksRef.current = [];
+      finalTranscriptRef.current = "";
 
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
-        },
-      });
+      // Request microphone permission first
+      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      streamRef.current = stream;
+      // Create recognition instance
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language;
+      recognition.maxAlternatives = 1;
 
-      // Setup audio analyser for visualization
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
+      recognition.onstart = () => {
+        setState("recording");
+        
+        // Start timer
+        timerRef.current = setInterval(() => {
+          setRecordingTime(prev => prev + 1);
+        }, 1000);
 
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') 
-          ? 'audio/webm' 
-          : 'audio/mp4',
-      });
+        // Simulate audio level for visual feedback
+        audioLevelIntervalRef.current = setInterval(() => {
+          setAudioLevel(Math.random() * 0.5 + 0.2);
+        }, 100);
+      };
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interim = "";
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscriptRef.current += result[0].transcript + " ";
+          } else {
+            interim += result[0].transcript;
+          }
+        }
+        
+        setInterimTranscript(interim);
+        
+        if (finalTranscriptRef.current) {
+          const processed = processMedicalText(finalTranscriptRef.current.trim());
+          setTranscript(processed);
         }
       };
 
-      mediaRecorder.onstop = () => {
-        processAudio();
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        // "aborted" is normal when user stops speaking or cancels - don't show error
+        if (event.error === 'aborted') {
+          setState("idle");
+          if (audioLevelIntervalRef.current) {
+            clearInterval(audioLevelIntervalRef.current);
+          }
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          return;
+        }
+        
+        console.error("Speech recognition error:", event.error);
+        
+        let errorMessage = "Speech recognition failed";
+        
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = "No speech detected. Please try speaking louder.";
+            break;
+          case 'audio-capture':
+            errorMessage = "No microphone found. Please check your microphone.";
+            break;
+          case 'not-allowed':
+            errorMessage = "Microphone access denied. Please allow microphone access.";
+            break;
+          case 'network':
+            errorMessage = "Network error. Please check your internet connection.";
+            break;
+        }
+        
+        setError(errorMessage);
+        setState("error");
+        
+        if (audioLevelIntervalRef.current) {
+          clearInterval(audioLevelIntervalRef.current);
+        }
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        
+        toast({
+          title: "Recognition Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       };
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Collect data in 100ms chunks
-      setState("recording");
+      recognition.onend = () => {
+        // Only process if we have final transcript
+        const finalText = finalTranscriptRef.current.trim();
+        if (finalText) {
+          const processed = processMedicalText(finalText);
+          
+          setState("success");
+          setTranscript(processed);
+          
+          // Call callback
+          if (onAppend && currentValue) {
+            const newText = currentValue.trim() 
+              ? `${currentValue.trim()} ${processed}`
+              : processed;
+            onTranscript(newText);
+          } else {
+            onTranscript(processed);
+          }
 
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+          const wordCount = processed.split(/\s+/).filter(w => w).length;
+          
+          toast({
+            title: "Transcription Complete",
+            description: `${wordCount} words transcribed`,
+          });
 
-      // Start audio level monitoring
-      monitorAudioLevel();
+          // Reset to idle after success
+          setTimeout(() => {
+            setState("idle");
+            setTranscript("");
+            setInterimTranscript("");
+          }, 1500);
+        } else {
+          // No transcript - return to idle
+          setState("idle");
+        }
+        
+        // Clear timers
+        if (audioLevelIntervalRef.current) {
+          clearInterval(audioLevelIntervalRef.current);
+        }
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        setAudioLevel(0);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
 
     } catch (err) {
-      console.error("Failed to start recording:", err);
+      console.error("Failed to start recognition:", err);
       setError("Microphone access denied. Please allow microphone access.");
       setState("error");
       toast({
@@ -155,132 +371,35 @@ export function VoiceInputButton({
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, language, processMedicalText, onTranscript, onAppend, currentValue]);
 
-  // Stop recording
-  const stopRecording = useCallback(() => {
+  // Stop recognition
+  const stopRecognition = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+    if (audioLevelIntervalRef.current) {
+      clearInterval(audioLevelIntervalRef.current);
+      audioLevelIntervalRef.current = null;
     }
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
-
-    analyserRef.current = null;
+    
+    setAudioLevel(0);
   }, []);
-
-  // Monitor audio level
-  const monitorAudioLevel = () => {
-    if (!analyserRef.current) return;
-
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    
-    const updateLevel = () => {
-      if (!analyserRef.current || state !== "recording") return;
-      
-      analyserRef.current.getByteFrequencyData(dataArray);
-      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-      setAudioLevel(average / 255);
-      
-      requestAnimationFrame(updateLevel);
-    };
-    
-    updateLevel();
-  };
-
-  // Process recorded audio
-  const processAudio = async () => {
-    setState("processing");
-
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { 
-        type: mediaRecorderRef.current?.mimeType || 'audio/webm' 
-      });
-
-      // Convert to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      
-      reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
-
-        try {
-          // Send to ASR API
-          const response = await fetch("/api/asr", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audioBase64: base64Audio,
-              context,
-            }),
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            setTranscript(data.transcription);
-            setState("success");
-            
-            // Call callback
-            if (onAppend && currentValue) {
-              // Append to existing text
-              const newText = currentValue.trim() 
-                ? `${currentValue.trim()} ${data.transcription}`
-                : data.transcription;
-              onTranscript(newText);
-            } else {
-              onTranscript(data.transcription);
-            }
-
-            toast({
-              title: "Transcription Complete",
-              description: `${data.wordCount} words transcribed`,
-            });
-
-            // Reset to idle after success
-            setTimeout(() => {
-              setState("idle");
-              setTranscript("");
-            }, 1500);
-
-          } else {
-            throw new Error(data.error || "Transcription failed");
-          }
-
-        } catch (err) {
-          console.error("ASR Error:", err);
-          setError(err instanceof Error ? err.message : "Transcription failed");
-          setState("error");
-          toast({
-            title: "Transcription Error",
-            description: "Failed to process audio. Please try again.",
-            variant: "destructive",
-          });
-        }
-      };
-
-    } catch (err) {
-      console.error("Processing error:", err);
-      setError("Failed to process audio");
-      setState("error");
-    }
-  };
 
   // Toggle recording
   const toggleRecording = () => {
-    if (disabled) return;
+    if (disabled || !isSupported) return;
     
     if (state === "recording") {
-      stopRecording();
+      stopRecognition();
     } else if (state === "idle" || state === "error" || state === "success") {
-      startRecording();
+      startRecognition();
     }
   };
 

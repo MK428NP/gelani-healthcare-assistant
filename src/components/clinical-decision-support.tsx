@@ -53,6 +53,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { VoiceInputButton } from "@/components/voice-input-button";
+import { TTSButton } from "@/components/tts-button";
 
 interface Patient {
   id: string;
@@ -667,6 +669,19 @@ export function ClinicalDecisionSupport({ preselectedPatientId }: ClinicalDecisi
                             </div>
                           )}
 
+                          {/* TTS Button for assistant messages */}
+                          {message.role === "assistant" && (
+                            <div className="mt-3 mb-2">
+                              <TTSButton
+                                text={message.content}
+                                size="sm"
+                                variant="ghost"
+                                showSettings={false}
+                                label="Read aloud"
+                              />
+                            </div>
+                          )}
+
                           <p className="text-xs text-slate-400 mt-2">
                             {message.timestamp.toLocaleTimeString()}
                           </p>
@@ -692,18 +707,30 @@ export function ClinicalDecisionSupport({ preselectedPatientId }: ClinicalDecisi
               </ScrollArea>
               <div className="p-4 border-t">
                 <div className="flex gap-2">
-                  <Textarea
-                    placeholder={selectedPatient ? `Ask about ${selectedPatient.firstName}'s symptoms or clinical questions...` : "Describe patient symptoms or ask a clinical question..."}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    className="min-h-[60px] resize-none"
-                  />
+                  <div className="relative flex-1">
+                    <Textarea
+                      placeholder={selectedPatient ? `Ask about ${selectedPatient.firstName}'s symptoms or clinical questions...` : "Describe patient symptoms or ask a clinical question..."}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      className="min-h-[60px] resize-none pr-12"
+                    />
+                    <div className="absolute right-2 top-2">
+                      <VoiceInputButton
+                        onTranscript={(text) => setInputValue(text)}
+                        currentValue={inputValue}
+                        context="medical"
+                        size="sm"
+                        variant="ghost"
+                        className="bg-white/80 hover:bg-white h-8 w-8"
+                      />
+                    </div>
+                  </div>
                   <Button
                     onClick={handleSend}
                     disabled={isLoading || !inputValue.trim()}
